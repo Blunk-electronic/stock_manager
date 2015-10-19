@@ -1,3 +1,5 @@
 *~
 *.o
 *.ali
+include
+bin

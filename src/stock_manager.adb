@@ -83,6 +83,9 @@
 -- supports scaling of facility bom file
 -- supports merging bom files to one
 
+-- v013
+-- prefix: DIS (for displays) supported
+
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 --with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
@@ -121,7 +124,7 @@ with csv; use csv;
 procedure stock_manager is
 
 
-	version			: String (1..3) := "012";
+	version			: String (1..3) := "013";
 
 	--part_count_max			: natural := 300; -- defines max. count of positions on stock
 
@@ -198,7 +201,8 @@ procedure stock_manager is
 			RECEPTACLE, -- receptacle
 			TERMINALF, -- terminal female
 			TERMINALM, -- terminal male
-			MODULE -- module
+			MODULE, -- module
+			DIS -- display -- ins v013
 			); 
 			-- ins v011 end
 	-- NOTE: adopt function verify_prefix after any change here !
@@ -2083,9 +2087,10 @@ procedure stock_manager is
 				--if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(12)) ) = 1 then -- this is an LED -- ins v003 -- rm v004
 				--if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(13)) ) = 1 -- this is an LED -- ins v004 -- rm v011
 				if index(project_part(ct).part, part_prefix_type'image(LED)) = 1 -- this is an LED -- ins v011
+				or index(project_part(ct).part, part_prefix_type'image(DIS)) = 1 -- this is a display -- ins v013
 				--or index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(14)) ) = 1 then -- this is a BAT -- ins v004 -- rm v011
 				or index(project_part(ct).part, part_prefix_type'image(BAT)) = 1 then -- this is a BAT -- ins v011
-					if is_digit(to_string(project_part(ct).part)(4)) then -- test if 4th character is a digit (i.e. LED3)
+					if is_digit(to_string(project_part(ct).part)(4)) then -- test if 4th character is a digit (i.e. LED3 or DIS7)
 						prefix_valid := true;
 						-- save prefix_to_return
 						prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,3) ); -- ins v003
@@ -2376,7 +2381,8 @@ procedure stock_manager is
 							--if index(project_part(ct).part,"LED") = 1 then -- rm v003
 							--	if is_digit(to_string(project_part(ct).part)(4)) then -- test if 4th character is a digit (i.e. LED3) -- rm v003
 							--elsif verify_prefix = "LED" then -- ins v003 -- rm v011
-							elsif verify_prefix = part_prefix_type'image(LED) then -- ins v011
+							elsif verify_prefix = part_prefix_type'image(LED) -- ins v011
+							or  verify_prefix = part_prefix_type'image(DIS) then -- ins v013
 								-- make sure part_code _VAL_ field matches actual value field
 								if verify_value_fields = false then
 									raise constraint_error;
