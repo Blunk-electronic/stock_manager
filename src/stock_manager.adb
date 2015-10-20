@@ -32,7 +32,6 @@
 -- create log directory if not present
 -- if storage places assigned, make sure the place is available (probably not a good idea)
 -- parse for valid accessories in function parse_part_code
--- on error OL410, output message that order list can not be written due to insufficient permissions on file
 
 -- history of changes
 -- v003:
@@ -84,7 +83,9 @@
 -- supports merging bom files to one
 
 -- v013
--- prefix: DIS (for displays) supported
+-- prefix DIS (for displays) supported
+-- bugfix: parts without any vendor information are now written with price 0.00 in bom
+-- on error OL410, message outputs that order list can not be written due to insufficient permissions on file
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -400,7 +401,9 @@ procedure stock_manager is
 		previous_output	: Ada.Text_IO.File_Type renames current_output;
 	begin
 		new_line;
-		put_line("ERROR : Insufficient rights to create or access file '" & file_name & "' !");
+		--put_line("ERROR : Insufficient rights to create or access file '" & file_name & "' !"); -- rm v013
+		put_line("ERROR : Insufficient rights to create, write or access file :"); -- ins v013
+		put_line("        '" & file_name & "' !"); -- ins v013
 		put_line("        Make sure file exists and access rights are correct.");
  		put_line("        Contact system administrator !");
 		set_output(previous_output);
@@ -2966,7 +2969,8 @@ procedure stock_manager is
 			prog_position := "MS210";
 			for i in 1..part_count_max2 loop
 				--if part_code_given = part_stock_array(i).part_code_fac then
-				if ada.strings.fixed.count(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) > 0 then
+				--if ada.strings.fixed.count(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) > 0 then -- rm v013
+				if search_pattern_in_text(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) > 0 then -- ins v013
 					prog_position := "MS220";
 					part_occured_on_stock := part_occured_on_stock + 1;
 					show_part_properties(i);
@@ -4016,11 +4020,12 @@ begin
 				prog_position := "AR086";
 				read_stock_data_base_part_count; --dyn
 				-- make sure the part code contains valid characters
-				if parse_part_code(to_string(part_code_given)) then
+				-- if parse_part_code(to_string(part_code_given)) then -- rm v013
+				-- CS: a parse_part_code_allowing_asterisk should be allowed here instead
 					prog_position := "AR088";
 					if manage_stock(stock_operation, part_id_given => 0, part_code_fac_given => to_string(part_code_given)) then null;
 					end if;
-				end if;
+				-- end if; -- rm v013
 			end if;
 
 			-- ins v009 begin
@@ -4362,6 +4367,7 @@ begin
 				put_line("ERROR : stock data base '" & to_string(stock_db_csv) & "' not found !");
 			end if;
 			if prog_position = "MS620" then print_error_on_insufficient_rights(to_string(bom_file_csv)); end if; -- ins v009
+			if prog_position = "OL410" then print_error_on_insufficient_rights(to_string(items_to_order_csv)); end if; -- ins v013
 			if prog_position = "UD000" then print_error_on_insufficient_rights(to_string(stock_db_csv)); end if; -- ins v009
 			if prog_position = "UD001" then print_error_on_insufficient_rights(to_string(stock_db_csv)); end if; -- ins v009
 			if prog_position = "IT000" then print_error_on_insufficient_rights(to_string(items_to_take_csv)); end if; -- ins v009
