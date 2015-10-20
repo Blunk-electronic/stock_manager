@@ -2639,6 +2639,8 @@ procedure stock_manager is
 								part_id => part_stock_array(p).part_id,
 								part_code => to_string(part_stock_array(p).part_code_fac)
 								);
+							price_net_min := 0.00; -- ins v013
+							price_net_max := 0.00; -- ins v013
 						end if;
 						-- ins v005 end
 
