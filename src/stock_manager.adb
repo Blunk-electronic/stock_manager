@@ -86,6 +86,7 @@
 -- prefix DIS (for displays) supported
 -- bugfix: parts without any vendor information are now written with price 0.00 in bom
 -- on error OL410, message outputs that order list can not be written due to insufficient permissions on file
+-- search function improved: show_by_order_code and show_by_fac_code supports wildcards '*'
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -2970,7 +2971,7 @@ procedure stock_manager is
 			for i in 1..part_count_max2 loop
 				--if part_code_given = part_stock_array(i).part_code_fac then
 				--if ada.strings.fixed.count(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) > 0 then -- rm v013
-				if search_pattern_in_text(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) > 0 then -- ins v013
+				if search_pattern_in_text(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) then -- ins v013
 					prog_position := "MS220";
 					part_occured_on_stock := part_occured_on_stock + 1;
 					show_part_properties(i);
@@ -2992,7 +2993,8 @@ procedure stock_manager is
 			distributor_order_code_given := to_bounded_string(argument(arg_pt+1));
 			for i in 1..part_count_max2 loop
 				for d in 1..distributor_count_max loop
-					if ada.strings.fixed.count(to_string(part_stock_array(i).distributors(d).order_code), to_string(distributor_order_code_given)) > 0 then
+					--if ada.strings.fixed.count(to_string(part_stock_array(i).distributors(d).order_code), to_string(distributor_order_code_given)) > 0 then -- rm v013
+					if search_pattern_in_text(to_string(part_stock_array(i).distributors(d).order_code), to_string(distributor_order_code_given)) then -- rm v013
 						prog_position := "MS920";
 						part_occured_on_stock := part_occured_on_stock + 1;
 						show_part_properties(i);
@@ -3005,9 +3007,6 @@ procedure stock_manager is
 			if part_occured_on_stock = 0 then print_error_on_unknown_part; end if;
 		end if;
 		-- ins v009 end 
-
-
-
 
 		prog_position := "MS300";
 		if stock_operation = edit then
@@ -3120,6 +3119,15 @@ procedure stock_manager is
 							end if;
 							prog_position := "MS34A";
 							part_stock_array(i).manufacturers(m).name := manufacturer_name_given;
+							-- ins v013 begin
+							-- If a manufacturer is deleted ( by assigning "n/a"), all order information is to be cleared
+							if manufacturer_name_given = to_bounded_string(not_assigned_mark) then
+								part_stock_array(i).manufacturers(m).part_code := to_bounded_string(not_assigned_mark);
+								part_stock_array(i).manufacturers(m).url_datasheet_1 := to_unbounded_string(not_assigned_mark);
+								part_stock_array(i).manufacturers(m).url_datasheet_2 := to_unbounded_string(not_assigned_mark);
+								part_stock_array(i).manufacturers(m).status_production := unknown;
+							end if;
+							-- ins v013 end
 							part_stock_array(i).manufacturers(m).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 							exit loop_through_part_stock_array;
 						end if;
@@ -3226,6 +3234,14 @@ procedure stock_manager is
 								raise constraint_error;
 							end if;
 							part_stock_array(i).distributors(d).name := distributor_name_given;
+							-- ins v013 begin
+							-- If a distributor is deleted ( by assigning "n/a"), all order information is to be cleared
+							if distributor_name_given = to_bounded_string(not_assigned_mark) then
+								part_stock_array(i).distributors(d).order_code := to_bounded_string(not_assigned_mark);
+								part_stock_array(i).distributors(d).qty_min := 1;
+								part_stock_array(i).distributors(d).price_net := 0.00;
+							end if;
+							-- ins v013 end
 							--part_stock_array(i).distributors(d).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 							part_stock_array(i).distributors(d).date_edited := date_now;
 							exit loop_through_part_stock_array;
