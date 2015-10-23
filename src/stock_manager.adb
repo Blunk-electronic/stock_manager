@@ -90,6 +90,7 @@
 -- If a manufacturer or distributor is deleted (by changing the name to "n/a" all other information belonging to it
 -- is delete also.
 -- On query_bom and checkout_bom the names of order and withdrawal list are fixed. No longer passed as arguments.
+-- When assigning part codes (facility, manufacturer, distributor), a warning is issued if code already used.
 
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
@@ -1542,12 +1543,14 @@ procedure stock_manager is
 		facility_bom_part_array			: parts_of_facility_bom_sized;
 
 		part_occured_on_stock		: natural := 0;
-		qty_on_stock_delta_given	: integer := 0;
+		--qty_on_stock_delta_given	: integer := 0; -- rm v013
+		qty_on_stock_delta_scratch	: integer := 0; -- ins v013
 		qty_on_stock_tmp			: natural := 0;
-		qty_reserved_given			: integer := 0;
+		--qty_reserved_given		: integer := 0; -- rm v013
+		qty_reserved_scratch		: integer := 0; -- ins v013
 		qty_reserved_tmp 			: natural := 0;
 		qty_scratch					: natural := 0;
-		part_code_fac_given2					: universal_string_type.bounded_string;
+--		part_code_fac_given2					: universal_string_type.bounded_string; -- rm v013
 		--manufacturer_name_given					: universal_string_type.bounded_string; -- rm v013
 		--manufacturer_part_code_given			: universal_string_type.bounded_string; -- rm v013
 		manufacturer_status_production_scratch 	: status_production_type;
@@ -3053,7 +3056,6 @@ procedure stock_manager is
 		end if;
 		-- ins v013 end
 
-
 		prog_position := "MS300";
 		if stock_operation = edit then
 			if read_stock_data_base then null;
@@ -3071,16 +3073,33 @@ procedure stock_manager is
 						prog_position := "MS315";
 						put_line("part code old   : " & to_string(part_stock_array(i).part_code_fac));
 						prog_position := "MS317";
-						part_code_fac_given2 := to_bounded_string(argument(arg_pt+3));
-						put_line("part code new   : " & to_string(part_code_fac_given2));
+						--part_code_fac_given2 := to_bounded_string(argument(arg_pt+3)); -- rm v013
+						--put_line("part code new   : " & to_string(part_code_fac_given2)); -- rm v013
+						put_line("part code new   : " & to_string(property_string_given)); -- ins v013
 						prog_position := "MS319";
-						if parse_part_code(to_string(part_code_fac_given2),1) = false then
+						--if parse_part_code(to_string(part_code_fac_given2),1) = false then -- rm v013
+						if parse_part_code(to_string(property_string_given),1) = false then -- ins v013
 							raise constraint_error;
 						end if;
+		
+						-- ins v013 begin
+						-- make sure the given part code does not exist already
+						prog_position := "MS31B";
+						for k in 1..part_count_max2 loop
+							if part_stock_array(k).part_code_fac = property_string_given then
+								new_line;
+								put_line("ERROR : A part with the given part code already exists !");
+								put_line("        ID of this part is :" & natural'image(part_stock_array(k).part_id));
+								raise constraint_error;
+							end if;
+						end loop;
+						-- ins v013 end
+
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
-						part_stock_array(i).part_code_fac := part_code_fac_given2;
+						--part_stock_array(i).part_code_fac := part_code_fac_given2; -- rm v013
+						part_stock_array(i).part_code_fac := property_string_given; -- ins v013
 						--part_stock_array(i).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 						part_stock_array(i).date_edited := date_now;
 						exit;
@@ -3088,18 +3107,23 @@ procedure stock_manager is
 
 					if part_property = qty_delta_stock then
 						prog_position := "MS320";
-						qty_on_stock_delta_given := integer'value(argument(arg_pt+3));
+						--qty_on_stock_delta_given := integer'value(argument(arg_pt+3)); -- rm v013
+						qty_on_stock_delta_scratch := integer'value(to_string(property_string_given)); -- ins v013
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 						put_line("storage place   : " & to_string(part_stock_array(i).storage_place)); -- ins v009
 						put_line("qty reserved    :" & natural'image(part_stock_array(i).qty_reserved));
 						put_line("qty on stock old:" & natural'image(part_stock_array(i).qty_on_stock));
-						if qty_on_stock_delta_given < 0 then
-							put_line("qty stock delta : " & trim(integer'image(qty_on_stock_delta_given),left));
+						--if qty_on_stock_delta_given < 0 then -- rm v013
+						if qty_on_stock_delta_scratch < 0 then -- ins v013
+							--put_line("qty stock delta : " & trim(integer'image(qty_on_stock_delta_given),left)); -- rm v013
+							put_line("qty stock delta : " & trim(integer'image(qty_on_stock_delta_scratch),left)); -- ins v013
 						else
-							put_line("qty stock delta : +" & trim(integer'image(qty_on_stock_delta_given),left));
+							--put_line("qty stock delta : +" & trim(integer'image(qty_on_stock_delta_given),left)); -- rm v013
+							put_line("qty stock delta : +" & trim(integer'image(qty_on_stock_delta_scratch),left)); -- ins v013
 						end if;
 						prog_position := "MS322";
-						qty_on_stock_tmp := part_stock_array(i).qty_on_stock + qty_on_stock_delta_given;
+						--qty_on_stock_tmp := part_stock_array(i).qty_on_stock + qty_on_stock_delta_given; -- rm v013
+						qty_on_stock_tmp := part_stock_array(i).qty_on_stock + qty_on_stock_delta_scratch; -- ins v013
 						put_line("qty on stock new:" & natural'image(qty_on_stock_tmp));
 
 						prog_position := "MS321"; -- here we test whether more parts are taken from stock than reserved
@@ -3119,27 +3143,41 @@ procedure stock_manager is
 
 					if part_property = qty_delta_reserved then
 						prog_position := "MS330";
-						qty_reserved_given := integer'value(argument(arg_pt+3));
+						--qty_reserved_given := integer'value(argument(arg_pt+3)); -- rm v013
+						qty_reserved_scratch := integer'value(to_string(property_string_given)); -- ins v013
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 						put_line("storage place   : " & to_string(part_stock_array(i).storage_place)); -- ins v009
 						put_line("qty on stock    :" & natural'image(part_stock_array(i).qty_on_stock));
 						put_line("qty reserved old:" & natural'image(part_stock_array(i).qty_reserved));
-						if qty_reserved_given < 0 then
-							put_line("qty rsvd. delta : " & trim(integer'image(qty_reserved_given),left));
+						--if qty_reserved_given < 0 then -- rm v013
+						if qty_reserved_scratch < 0 then -- ins v013
+							--put_line("qty rsvd. delta : " & trim(integer'image(qty_reserved_given),left)); -- rm v013
+							put_line("qty rsvd. delta : " & trim(integer'image(qty_reserved_scratch),left)); -- ins v013
 						else
-							put_line("qty rsvd. delta : +" & trim(integer'image(qty_reserved_given),left));
+							--put_line("qty rsvd. delta : +" & trim(integer'image(qty_reserved_given),left)); -- rm v013
+							put_line("qty rsvd. delta : +" & trim(integer'image(qty_reserved_scratch),left)); -- ins v013
 						end if;
 						prog_position := "MS332";
-						if part_stock_array(i).qty_reserved + qty_reserved_given < 0 then  -- if qty_reserved already zero
+						--if part_stock_array(i).qty_reserved + qty_reserved_given < 0 then  -- if qty_reserved already zero -- rm v013
+						if part_stock_array(i).qty_reserved + qty_reserved_scratch < 0 then  -- if qty_reserved already zero -- ins v013
 							part_stock_array(i).qty_reserved := 0; -- set the lower limit of reservations to zero
 							new_line;
-							put_line("INFO : Number of reservations can not be less than zero.");
+							--put_line("INFO : Number of reservations can not be less than zero.");
+							put_line("INFO : Number of reservations is down to zero.");
 							new_line;
 						else	-- otherwise compute qty_reserved by
-							qty_reserved_tmp := part_stock_array(i).qty_reserved + qty_reserved_given;
+							--qty_reserved_tmp := part_stock_array(i).qty_reserved + qty_reserved_given; -- rm v013
+							qty_reserved_tmp := part_stock_array(i).qty_reserved + qty_reserved_scratch; -- ins v013
 						end if;
 						put_line("qty reserved new:" & natural'image(qty_reserved_tmp));
 						prog_position := "MS334";
+						-- ins v013 begin
+						if part_stock_array(i).qty_on_stock < qty_reserved_tmp then
+							new_line;
+							put_line("ERROR : You can not reserve more items than available on stock !");
+							raise constraint_error;
+						end if;
+						-- ins v013 end
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
@@ -3189,6 +3227,25 @@ procedure stock_manager is
 								prog_position := "MS342";
 								--manufacturer_part_code_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
 								--manufacturer_part_code_given := property_string_given; -- ins v013
+
+								-- ins v013 begin
+								-- make sure the given manufacturer part code does not exist already
+								prog_position := "MS34M";
+								for k in 1..part_count_max2 loop
+									for l in 1..manufacturer_count_max loop
+										if part_stock_array(k).manufacturers(l).part_code = property_string_given then
+											new_line;
+											put_line("WARNING : The given manufacturer part code is already ");
+											put_line("          used by part with ID :" & natural'image(part_stock_array(k).part_id));
+											--raise constraint_error;
+											if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
+												raise constraint_error;
+											end if;
+										end if;
+									end loop;
+								end loop;
+								-- ins v013 end
+
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("manuf. name     : " & to_string(part_stock_array(i).manufacturers(m).name));
 								put_line("part code old   : " & to_string(part_stock_array(i).manufacturers(m).part_code));
@@ -3317,6 +3374,23 @@ procedure stock_manager is
 							if to_string(part_stock_array(i).distributors(d).name) = not_assigned_mark then
 								print_error_on_non_defined_distributor(d);
 							else
+								-- ins v013 begin
+								-- make sure the given distributor order code does not exist already
+								prog_position := "MS34N";
+								for k in 1..part_count_max2 loop
+									for l in 1..distributor_count_max loop
+										if part_stock_array(k).distributors(l).order_code = property_string_given then
+											new_line;
+											put_line("WARNING : The given distributor order code is already ");
+											put_line("          used by part with ID :" & natural'image(part_stock_array(k).part_id));
+											if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
+												raise constraint_error;
+											end if;
+										end if;
+									end loop;
+								end loop;
+								-- ins v013 end
+
 								--distributor_order_code_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("distributor name: " & to_string(part_stock_array(i).distributors(d).name));
@@ -4012,7 +4086,6 @@ begin
 
 
 	while arg_pt <= arg_ct
-
 		loop
 			if argument(arg_pt) = "help" then -- print help
 				prog_position := "HL001";
@@ -4155,8 +4228,6 @@ begin
 				end if;
 			end if;
 			-- ins v009 end
-
-
 
 			if argument(arg_pt) = "edit" then
 				stock_operation := edit;
