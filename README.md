@@ -1,7 +1,8 @@
 # stock_manager
-Open Source ERP System programmed in ada
-Please find the user manual at 
-http://www.blunk-electronic.de/products/sw/stock_manager/doc/Stock_Manager_en.pdf
+Open Source ERP System programmed in ada.
+
+Contact: Mario Blunk / Blunk electronic / info@blunk-electronic.de
+http://www.blunk-electronic.de / Phone +49 361 6022 5184
 
 Your feedback is highly welcome !
 
