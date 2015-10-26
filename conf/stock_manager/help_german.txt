@@ -1,0 +1,106 @@
+HILFE (Version 003)
+-------------------
+
+Eigenschaften eines Bauteiles anzeigen (Kurzform):
+--------------------------------------------------
+Beispiele:
+
+anhand Materialnummer: stock_manager show_by_id 4
+
+anhand firmenspez. Bauteilcode : stock_manager show_by_fac_code *VAL_160
+
+anhand Hersteller-Code : stock_manager show_by_manu_code LM324*
+
+anhand Distributor Bestellnummer : stock_manager show_by_order_code NCC-1701-E
+
+
+Eigenschaften eines Bauteiles anzeigen (Langform):
+--------------------------------------------------
+Beispiele:
+
+anhand Materialnummer: stock_manager full show_by_id 4
+
+anhand firmenspez. Bauteilcode: stock_manager full show_by_code *VAL_160
+
+anhand Distributor Bestellnummer : stock_manager full show_by_order_code NCC-1701-E
+
+
+Bearbeiten eines Bauteils:
+--------------------------
+gelagerte Stückzahl des Bauteils mit Mat. Nummer 250 um 5 Stück erhöhen    : stock_manager edit 250 qty_delta_stock 5
+gelagerte Stückzahl des Bauteils mit Mat. Nummer 250 um 5 Stück verringern : stock_manager edit 250 qty_delta_stock -5
+
+reservierte Stückzahl des Bauteils auf 2 erhöhen : stock_manager edit 250 qty_reserved 2
+
+Lagerort des Bauteils nach "Kiste_2" : stock_manager edit 250 storage_place kiste_2
+
+Hersteller Name 1 nach "Mueller GmbH" :  stock_manager edit 250 manufacturer_1_name Mueller_GmbH
+
+Hersteller 1 Code nach "BAT48" :  stock_manager edit 250 manufacturer_1_part_code BAT48
+
+Link zum Datenblatt 1 :  stock_manager edit 250 manufacturer_1_datasheet_1 http://www.blunk-electronic.de/datasheet/transistors/BCW60.pdf
+
+Produktionsstatus nach "aktiv" : stock_manager edit 250 manufacturer_1_status_production active
+(andere mögliche Produktionszustände: active, obsolete, discontinued, preliminary, not_for_new_designs, unknown)
+
+Distributor 1 nach "Schneider AG" : stock_manager edit 250 distributor_1_name Schneider_AG
+
+Distributor 1 Bestellnummer nach "NCC1701" : stock_manager edit 250 distributor_1_order_code NCC1701
+
+Distributor 1 Mindestbestellmenge nach 100 : stock_manager edit 250 distributor_1_qty_min 100
+
+Distributor 1 Nettopreis : stock_manager edit 250 distributor_1_price_net 3.50
+
+Projekt : stock_manager edit 250 project x15
+
+Bemerkungen: stock_manager edit 250 remarks "bitte einzeln verpacken"
+
+
+Hinzufügen eines Bauteils:
+--------------------------
+Ein neues Bauteil wird anhand des Bauteilcodes ins Lager aufgenommen: stock_manager add IC_PAC_S_TQFP144_VAL_XC2C384
+
+
+Löschen eines Bauteils:
+-----------------------
+Ein Bauteil wird anhand des Bauteilcodes gelöscht: stock_manager delete IC_PAC_S_TQFP144_VAL_XC2C384
+
+
+Logbuch anzeigen:
+-----------------
+Geloggt werden nur Aktionen, die im Lager Veränderungen bewirkten (edit, delete, add).
+Das Logbuch wird so aufgerufen: stock_manager log
+
+
+Materialliste (Facility BOM) erzeugen:
+--------------------------------------
+Ausgangspunkt ist die vom CAE Werkzeug EAGLE erzeugte Materialliste mittels des ULPs bom.ulp. Diese enthält alle Teile
+einer bestückten Leiterplatte für EINE Baugruppe. Der darauf folgende Parameter ist die zu erzeugende Facitily BOM.
+Wird kein Name der zu erzeugenden Facitily BOM angegeben, wird dieser automatisch generiert:
+
+stock_manager make_bom vom_ulp_bom_erzeugte_liste.csv [facility_bom.csv]
+
+
+Materialanfrage stellen:
+------------------------
+Mittels der Facility BOM und der zu Menge zu bestückender Leiterplatten wird der Lagerbestand abgefragt. Das Ergebnis ist
+eine Liste welche die evtl. zu bestellenden Teile enthält. Der Name dieser Liste ist gleich der Facility BOM mit 
+Suffix "_order.csv" im Verzeichnis der Facility BOM:
+
+stock_manager query_bom facility_bom.csv 5
+
+
+Materialentnahme mittels Facility BOM:
+--------------------------------------
+Bauteile werden anhand der Facility BOM, Bestellliste und Stückzahl zu bestückende Leiterplatten vom Lager ausgebucht. 
+Draufhin werden aus dem Lager zu entnehmende Teile in einer Entnahmeliste aufgeführt. Das Ergebnis ist
+eine Liste welche die evtl. zu bestellenden Teile oder (falls alle Teile auf Lager sind) die Entnahmeliste. 
+Der Name dieser Listen ist gleich der Facility BOM mit Suffix "_order.csv" oder "_withdrawal.csv" im 
+Verzeichnis der Facility BOM:
+
+stock_manager checkout_bom facility_bom.csv 5
+
+
+
+
+--- HILFE ENDE ---
