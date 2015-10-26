@@ -17,3 +17,5 @@ unzip stock_manager-master.zip
 
 5. copy the executable file "stock_manager" where you need it (e.g. $HOME/bin)
 
+6. read stock_manager-master/conf/readme.txt
+
