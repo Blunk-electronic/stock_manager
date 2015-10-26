@@ -92,6 +92,7 @@
 -- On query_bom and checkout_bom the names of order and withdrawal list are fixed. No longer passed as arguments.
 -- When assigning part codes (facility, manufacturer, distributor), a warning is issued if code already used.
 
+
 with Ada.Text_IO;			use Ada.Text_IO;
 with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
 --with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
@@ -346,7 +347,6 @@ procedure stock_manager is
 		end record;
 	type manufacturer_array_type is array (natural range <>) of manufacturer_type;
 	subtype manufacturer_array_sized is manufacturer_array_type (1..manufacturer_count_max); 
-
 
 
 	type part_stock_type is
@@ -1105,7 +1105,8 @@ procedure stock_manager is
 	begin
 		set_output(standard_output);
 		new_line;
-		put_line("ERROR : Part ID outside range '1.." & trim(natural'image(part_count_max2),left) & "' !");
+		--put_line("ERROR : Part ID outside range '1.." & trim(natural'image(part_count_max2),left) & "' !"); -- rm v013
+		put_line("ERROR : Part ID not in use or outside range '1.." & trim(natural'image(part_count_max2),left) & "' !"); -- ins v013
 		new_line;
 		raise constraint_error;
 	end print_error_on_unknown_id;
