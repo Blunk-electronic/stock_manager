@@ -3,15 +3,16 @@ STOCK MANAGER INSTALLATION
 
 1. Download 
 
-https://github.com/Blunk-electronic/stock_manager/archive/master.zip
+https://github.com/Blunk-electronic/stock_manager/archive/v01x.tar.gz
 
 
 2. Unpack the archive
 
-unzip stock_manager-master.zip
+gunzip stock_manager-01x.tar.gz
+tar -xf stock_manager-01x.tar
 
 
-3. cd stock_manager-master/src
+3. cd stock_manager-01x/src
 
 4. make
 
