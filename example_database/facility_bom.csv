@@ -1,0 +1,54 @@
+"BILL OF MATERIAL";
+"------------------------------";
+"board:";"bom_created_by_eagle_ulp";
+
+"created by";"STOCK MANAGER";"V010";
+"contact:";"www.blunk-electronic.de";
+"date:";"2015-08-03 14:49:25";"(YYYY-MM-DD HH:MM:SS)";
+
+"part count SMD:";"58";
+"part count THT:";"64";
+"part count TOTAL:";"122";
+
+"POS.";"QTY";"PART_NAME";"PART_CODE_BEL";"PART_ID";"MANUFACTURER / PART_CODE";"MANUFACTURER / PART_CODE";"MANUFACTURER / PART_CODE";"PRICE_NET_MIN";"PRICE_NET_MAX";
+
+"1";"21";"C301, C801, C802, C901, C1101, C1102, C1103, C1104, C1105, C1106, C1107, C1108, C1109, C1110, C1111, C1201, C1202, C1203, C1204, C1301, C1304";"C_PAC_S_0805_VAL_100n";"13";"AVX / 08055C104JAT2A";"n/a / n/a";"test_manu / n/a";"0.21";"0.84";
+"2";"4";"C302, C307, C1302, C1306";"C_PAC_T_RADIAL_5mm_GRID_2.54mm_VAL_1u_Vmax_50V";"38";"PANASONIC / EEUHD1H1R0";"n/a / n/a";"n/a / n/a";"1.44";"1.44";
+"3";"4";"C303, C304, C305, C306";"C_PAC_T_RADIAL_7mm_GRID_2.54mm_VAL_100u_Vmax_35V";"40";"RUBYCON / 35PK100MEFC6.3X11";"n/a / n/a";"n/a / n/a";"0.12";"1.12";
+"4";"1";"C1001";"C_PAC_S_0805_VAL_10n";"15";"AVX / 08055C103JAT2A";"YAGEO / CC0805JRX7R9BB103";"n/a / n/a";"0.01";"0.02";
+"5";"2";"C1303, C1305";"C_PAC_T_RADIAL_5mm_GRID_2.54mm_VAL_10u_Vmax_35V";"37";"PANASONIC / ECA1VAD100X";"n/a / n/a";"n/a / n/a";"0.06";"0.48";
+"6";"4";"D901, D902, D903, D904";"D_PAC_T_DO204_GRID_10mm_VAL_BAT48";"47";"VISHAY / BAT48-TAP";"n/a / n/a";"n/a / n/a";"0.36";"0.36";
+"7";"1";"IC201";"IC_PAC_S_TQFP144_VAL_XC2C384-10TQG144C";"74";"XILINX / XC2C384-10TQG144C";"n/a / n/a";"n/a / n/a";"25.00";"25.00";
+"8";"3";"IC301, IC1301, IC1302";"IC_PAC_T_TO220-3_VERTICAL_VAL_LM1117T-ADJ";"89";"TEXAS-INSTR. / LM1117T-ADJ";"n/a / n/a";"n/a / n/a";"2.91";"3.57";
+"9";"3";"IC401, IC402, IC1201";"IC_PAC_S_SO16_VAL_ULN2003D";"64";"TEXAS-INSTR. / ULN2003AD";"n/a / n/a";"n/a / n/a";"0.60";"1.14";
+"10";"2";"IC801, IC802";"IC_PAC_S_SO8_VAL_MAX517ACSA+";"69";"MAXIM-IC / MAX517ACSA+";"n/a / n/a";"n/a / n/a";"10.30";"10.30";
+"11";"1";"IC901";"IC_PAC_S_SO8_VAL_MAX962ESA+";"70";"MAXIM-IC / MAX962ESA+";"n/a / n/a";"n/a / n/a";"9.00";"12.34";
+"12";"2";"IC1202, IC1203";"IC_PAC_S_SO16_VAL_74HC4051D";"62";"NXP / 74HC4051D";"n/a / n/a";"n/a / n/a";"0.56";"0.60";
+"13";"1";"J201";"J_PAC_T_MALE_2X1_VERTICAL";"92";"TEC/AMP / 826926-2";"n/a / n/a";"n/a / n/a";"0.01";"0.01";
+"14";"15";"K501, K502, K503, K504, K505, K506, K507, K508, K509, K510, K511, K512, K513, K514, K515";"K_PAC_T_NDIP14_2xmaker_VAL_DIP05-2A72-21D";"96";"MEDER / DIP05-2A72-21D";"n/a / n/a";"n/a / n/a";"35.85";"35.85";
+"15";"5";"LED301, LED302, LED303, LED304, LED1401";"LED_PAC_T_ROUND_3mm_VAL_green";"102";"multicomp / 703-0087";"n/a / n/a";"n/a / n/a";"0.70";"0.70";
+"16";"1";"LED1402";"LED_PAC_T_ROUND_3mm_VAL_yellow";"104";"multicomp / 703-0088";"n/a / n/a";"n/a / n/a";"0.16";"0.16";
+"17";"1";"LED1403";"LED_PAC_T_ROUND_3mm_VAL_red";"103";"AVAGO / HLMP-K105";"n/a / n/a";"n/a / n/a";"0.15";"0.15";
+"18";"8";"R201, R202, R601, R602, R603, R604, R701, R702";"R_PAC_T_0207_GRID_10mm_VAL_300";"190";"TEC / LR0204F300R";"n/a / n/a";"n/a / n/a";"0.24";"0.24";
+"19";"3";"R301, R306, R1201";"R_PAC_S_0805_VAL_1k";"149";"MULTICOMP / MCHP05W4F1001T5E";"n/a / n/a";"n/a / n/a";"0.24";"0.30";
+"20";"1";"R302";"R_PAC_S_0805_VAL_160";"145";"multicomp / MC01W08055160R";"n/a / n/a";"n/a / n/a";"0.03";"0.03";
+"21";"4";"R303, R1401, R1402, R1403";"R_PAC_S_0805_VAL_100";"140";"BOURNS / CR0805-JW-101ELF";"n/a / n/a";"n/a / n/a";"0.12";"0.12";
+"22";"1";"R304";"R_PAC_S_0805_VAL_105";"142";"VISHAY / CRCW0805105RFKEA";"n/a / n/a";"n/a / n/a";"0.18";"0.18";
+"23";"3";"R305, R1304, R1310";"R_PAC_S_0805_VAL_240";"153";"VISHAY / CRCW0805240RFKEA";"n/a / n/a";"n/a / n/a";"0.18";"0.18";
+"24";"1";"R307";"R_PAC_T_0207_GRID_10mm_VAL_680";"194";"multicomp / MF25 680R";"n/a / n/a";"n/a / n/a";"0.04";"0.04";
+"25";"1";"R308";"R_PAC_T_0207_GRID_10mm_VAL_330";"191";"multicomp / MF25 330R";"n/a / n/a";"n/a / n/a";"0.04";"0.04";
+"26";"1";"R1001";"R_PAC_S_0805_VAL_10k";"143";"multicomp / MC 0.1W 0805 5% 10K";"n/a / n/a";"n/a / n/a";"0.04";"0.05";
+"27";"2";"R1301, R1306";"R_PAC_S_0805_VAL_71R5";"168";"multicomp / MC01W0805171R5";"n/a / n/a";"n/a / n/a";"0.06";"0.06";
+"28";"2";"R1302, R1308";"R_PAC_S_0805_VAL_422";"161";"multicomp / MC01W08051422R";"n/a / n/a";"n/a / n/a";"0.06";"0.06";
+"29";"2";"R1303, R1307";"R_PAC_S_0805_VAL_169";"146";"multicomp / MC01W08051169R";"n/a / n/a";"n/a / n/a";"0.06";"0.06";
+"30";"2";"R1305, R1309";"R_PAC_S_0805_VAL_698";"167";"VISHAY / CRCW0805698RFKEA";"n/a / n/a";"n/a / n/a";"0.14";"0.14";
+"31";"5";"RN101, RN401, RN402, RN1202, RN1203";"RN_PAC_T_SIL9_VAL_1k";"115";"BI TECHNOLOGIES / L 09-1S 2% 1 K";"n/a / n/a";"n/a / n/a";"0.45";"0.45";
+"32";"3";"RN201, RN1201, RN1301";"RN_PAC_T_SIL9_VAL_10k";"114";"multicomp / MCRNLA09G0103B0E";"BI TECHNOLOGIES / L 09-1S 2% 10 K";"n/a / n/a";"0.27";"0.66";
+"33";"6";"T1301, T1302, T1303, T1304, T1305, T1306";"T_PAC_S_SOT23_VAL_DMG3420U";"202";"DIODES/ZETEX / DMG3420U-7";"n/a / n/a";"n/a / n/a";"0.72";"0.90";
+"34";"2";"X101, X102";"X_PAC_T_MALE_2X20_VERTICAL";"257";"molex / 10-89-7402";"n/a / n/a";"n/a / n/a";"4.60";"4.60";
+"35";"1";"X201";"X_PAC_T_MALE_2X5_VERTICAL_2.54mm";"263";"molex / 10-89-7102";"n/a / n/a";"n/a / n/a";"0.67";"0.67";
+"36";"1";"X301";"X_PAC_T_CLAMP_1X8_5mm";"240";"METZ-CONNECT / AST0250804";"n/a / n/a";"n/a / n/a";"1.18";"1.18";
+"37";"2";"X601, X701";"X_PAC_T_MALE_2X13_VERTICAL_GRID_2.54mm";"254";"molex / 90131-0773";"n/a / n/a";"n/a / n/a";"2.16";"2.16";
+"----------";"----------";"----------";"----------";"----------";"----------";"----------";"----------";"----------";"----------";
+;;;;;;;;"98.92";"106.20";
+"END OF BOM";

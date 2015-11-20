@@ -1,0 +1,48 @@
+STOCK MANAGER V010 WITHDRAWAL LIST
+------------------------------------------------------------
+"BOARD:";"facility_bom";
+"NUMBER OF UNITS:";"1";
+
+"DATE: 2015-08-03 14:52:10";"(YYYY:MM:DD HH:MM:SS)";
+------------------------------------------------------------
+"POS.";"STORAGE_PLACE";"PART_ID";"QTY";"PART_CODE_BEL";
+
+"1";"S1/1";"13";"21";"C_PAC_S_0805_VAL_100n";
+"2";"S1/5";"38";"4";"C_PAC_T_RADIAL_5mm_GRID_2.54mm_VAL_1u_Vmax_50V";
+"3";"S1/5";"40";"4";"C_PAC_T_RADIAL_7mm_GRID_2.54mm_VAL_100u_Vmax_35V";
+"4";"S1/1";"15";"1";"C_PAC_S_0805_VAL_10n";
+"5";"S1/4";"37";"2";"C_PAC_T_RADIAL_5mm_GRID_2.54mm_VAL_10u_Vmax_35V";
+"6";"S2/1";"47";"4";"D_PAC_T_DO204_GRID_10mm_VAL_BAT48";
+"7";"S3/3";"74";"1";"IC_PAC_S_TQFP144_VAL_XC2C384-10TQG144C";
+"8";"S3/4";"89";"3";"IC_PAC_T_TO220-3_VERTICAL_VAL_LM1117T-ADJ";
+"9";"S3/1";"64";"3";"IC_PAC_S_SO16_VAL_ULN2003D";
+"10";"S3/2";"69";"2";"IC_PAC_S_SO8_VAL_MAX517ACSA+";
+"11";"S3/2";"70";"1";"IC_PAC_S_SO8_VAL_MAX962ESA+";
+"12";"S3/1";"62";"2";"IC_PAC_S_SO16_VAL_74HC4051D";
+"13";"S7/1";"92";"1";"J_PAC_T_MALE_2X1_VERTICAL";
+"14";"S31/1";"96";"15";"K_PAC_T_NDIP14_2xmaker_VAL_DIP05-2A72-21D";
+"15";"S4/1";"102";"5";"LED_PAC_T_ROUND_3mm_VAL_green";
+"16";"S4/2";"104";"1";"LED_PAC_T_ROUND_3mm_VAL_yellow";
+"17";"S4/2";"103";"1";"LED_PAC_T_ROUND_3mm_VAL_red";
+"18";"S15/4";"190";"8";"R_PAC_T_0207_GRID_10mm_VAL_300";
+"19";"S14/2";"149";"3";"R_PAC_S_0805_VAL_1k";
+"20";"S14/2";"145";"1";"R_PAC_S_0805_VAL_160";
+"21";"S14/1";"140";"4";"R_PAC_S_0805_VAL_100";
+"22";"S14/1";"142";"1";"R_PAC_S_0805_VAL_105";
+"23";"S14/3";"153";"3";"R_PAC_S_0805_VAL_240";
+"24";"S15/5";"194";"1";"R_PAC_T_0207_GRID_10mm_VAL_680";
+"25";"S15/4";"191";"1";"R_PAC_T_0207_GRID_10mm_VAL_330";
+"26";"S14/1";"143";"1";"R_PAC_S_0805_VAL_10k";
+"27";"S14/4";"168";"2";"R_PAC_S_0805_VAL_71R5";
+"28";"S14/3";"161";"2";"R_PAC_S_0805_VAL_422";
+"29";"S14/2";"146";"2";"R_PAC_S_0805_VAL_169";
+"30";"S14/3";"167";"2";"R_PAC_S_0805_VAL_698";
+"31";"S13/1";"115";"5";"RN_PAC_T_SIL9_VAL_1k";
+"32";"S13/2";"114";"3";"RN_PAC_T_SIL9_VAL_10k";
+"33";"S5/2";"202";"6";"T_PAC_S_SOT23_VAL_DMG3420U";
+"34";"S7/2";"257";"2";"X_PAC_T_MALE_2X20_VERTICAL";
+"35";"S7/3";"263";"1";"X_PAC_T_MALE_2X5_VERTICAL_2.54mm";
+"36";"S7/4";"240";"1";"X_PAC_T_CLAMP_1X8_5mm";
+"37";"S7/2";"254";"2";"X_PAC_T_MALE_2X13_VERTICAL_GRID_2.54mm";
+"END OF LIST";
+
