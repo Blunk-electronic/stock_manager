@@ -38,7 +38,7 @@ procedure_make()
 [ ! -e $dest_conf_dir ] && 
 	{
 	echo "creating hidden configuration directory" $dest_conf_dir "..."
-	cp -R conf/stock_manager $HOME/.dest_conf_dir
+	cp -R conf/stock_manager $dest_conf_dir
 	}
 #CS: ask user if configuration directory should be updated.
 

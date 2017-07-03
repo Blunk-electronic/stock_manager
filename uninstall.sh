@@ -5,6 +5,10 @@
 version=001
 
 set -e
+
+dest_conf_dir=$HOME/.stock_manager
+
+
 echo "Stock_Manager uninstaller version" $version
 
 procedure_operator_confirmation()
@@ -27,12 +31,12 @@ procedure_make()
 	}
 
 
-conf_directory=$HOME/.stock_manager
-[ -e conf_directory ] && 
+
+[ -e $dest_conf_dir ] && 
 	{
-	echo "delete configuration directory" $conf_directory
+	echo "delete configuration directory" $dest_conf_dir
 #	procedure_operator_confirmation
-	rm -rf $conf_directory
+	rm -rf $dest_conf_dir
 	}
 
 
