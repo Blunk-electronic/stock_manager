@@ -133,9 +133,7 @@ procedure stock_manager is
 	manufacturer_count_max 	: natural := 3;
 	distributor_count_max 	: natural := 6;
 
-	default_date	: string (1..19) := "0000-00-00 00:00:00";
-	now				: time := clock;
-	date_now		: string (1..19) := image(now, time_zone => UTC_Time_Offset(now));
+	default_date	: constant string (1..19) := "0000-00-00 00:00:00";
 
 	arg_ct			: natural;
 	arg_pt			: natural := 1;
@@ -144,24 +142,24 @@ procedure stock_manager is
 	arg_ct_bom		: natural := 0;
 	arg_ct_fac		: natural := 0;
 
-	parts_db_file			: Ada.Text_IO.File_Type;
-	stock_db_file			: Ada.Text_IO.File_Type;
-	conf_file				: Ada.Text_IO.File_Type;
-	log_file				: Ada.Text_IO.File_Type;
-	eagle_bom_file			: Ada.Text_IO.File_Type;
-	bom_output_file			: Ada.Text_IO.File_Type;
-	facility_bom_file		: Ada.Text_IO.File_Type;
-	facility_bom_file_scaled: Ada.Text_IO.File_Type; -- ins v012
-	items_to_order_file		: Ada.Text_IO.File_Type;
-	items_to_take_file		: Ada.Text_IO.File_Type;
+	parts_db_file			: ada.text_io.file_type;
+	stock_db_file			: ada.text_io.file_type;
+	conf_file				: ada.text_io.file_type;
+	log_file				: ada.text_io.file_type;
+	eagle_bom_file			: ada.text_io.file_type;
+	bom_output_file			: ada.text_io.file_type;
+	facility_bom_file		: ada.text_io.file_type;
+	facility_bom_file_scaled: ada.text_io.file_type; -- ins v012
+	items_to_order_file		: ada.text_io.file_type;
+	items_to_take_file		: ada.text_io.file_type;
 	quantity_of_units		: natural := 1;
 
 	simple_date_field_length	: natural := 10; -- 1974-12-21
 	package simple_date_type is new generic_bounded_length(simple_date_field_length); use simple_date_type;
 
-	prog_position	: String (1..5) := "-----";
+	prog_position		: string (1..5) := "-----";
 
-	line				: Unbounded_string;
+	line				: unbounded_string;
 	
 	scratch_natural		: natural := 0;
 
@@ -172,15 +170,15 @@ procedure stock_manager is
 
 	operator_confirmation_required : boolean := true; -- per default the operator is requested to confirm actions
 
-	not_assigned_mark		: string (1..3) := "n/a";
-	row_separator			: string (1..60) := "------------------------------------------------------------";
-	row_separator_double	: string (1..60) := "============================================================";
+	not_assigned_mark		: constant string (1..3) := "n/a";
+	row_separator			: constant string (1..60) := "------------------------------------------------------------";
+	row_separator_double	: constant string (1..60) := "============================================================";
 
-	valid_letter 	:	ada.strings.maps.character_set := ada.strings.maps.to_set( ranges =>  ( ('A','Z'),('a','z'),('0','9') ) );
+	valid_letter 	: constant ada.strings.maps.character_set := ada.strings.maps.to_set( ranges =>  ( ('A','Z'),('a','z'),('0','9') ) );
 	--valid_special 	:	ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%"); -- rm v002
 	--valid_special 	:	ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%."); -- ins v002 -- rm v004
-	valid_special 	:	ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%./"); -- ins v004
-	valid_character	:	ada.strings.maps.character_set := ada.strings.maps."or"(valid_letter,valid_special); -- compose set of valid characters
+	valid_special 	: constant ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%./"); -- ins v004
+	valid_character	: constant ada.strings.maps.character_set := ada.strings.maps."or"(valid_letter,valid_special); -- compose set of valid characters
 
 	--type part_prefix_type is (R, RN, C, L, K, IC, LED, D, T, F, X, J, S); -- rm v003
 	--type part_prefix_type is (C, D, F, J, K, L, R, S, T, X, IC, RN, LED); -- ins v003 -- rm v004
@@ -204,10 +202,10 @@ procedure stock_manager is
 	type part_code_keyword_type is ( PAC_S , PAC_T , VAL , TOL , VMAX , TK ); -- DO NOT CHANGE POSITIONS OF PAC_S AND PAC_T !!!
 	type accessory_keyword_type is ( CABLE , JUMPER , CONNECTOR , HOLDER , SOCKET , SCREW , NUT , WASHER , BAG ); -- ins v007
 
-	part_prefix_count		: natural := part_prefix_type'pos((part_prefix_type'last)); -- number of allowed prefixes
-	part_code_keyword_count	: natural := part_code_keyword_type'pos((part_code_keyword_type'last)); -- number of allowed keywords in part_code_fac
+	part_prefix_count		: constant natural := part_prefix_type'pos((part_prefix_type'last)); -- number of allowed prefixes
+	part_code_keyword_count	: constant natural := part_code_keyword_type'pos((part_code_keyword_type'last)); -- number of allowed keywords in part_code_fac
 	--valid_prefix	: part_prefix_type;
-	ifs_in_part_code_fac	: character := '_';
+	ifs_in_part_code_fac	: constant character := '_';
 
 	--type stock_operation_type is (default, show_by_id, show_by_code, add, edit, delete, query_bom, make_bom, checkout_bom, roll_back, log); -- rm v009
 	--type stock_operation_type is (default, show_by_id, show_by_fac_code, show_by_order_code, add, edit, delete, query_bom, make_bom, checkout_bom, roll_back, log); -- ins v009 -- rm v011
@@ -256,16 +254,16 @@ procedure stock_manager is
 	subtype part_property_editable_type is part_property_type range qty_delta_stock..distributor_6_price_net; -- cs: consider distributor_count_max
 	--part_property_editable 	: part_property_editable_type;
 
-	universal_string_length	: natural := 200; -- changed from 100 to 200 in v013
+	universal_string_length	: constant natural := 200; -- changed from 100 to 200 in v013
 	package universal_string_type is new generic_bounded_length(universal_string_length); use universal_string_type;
 
-	customized_prefix_count_max	: natural := 20; -- ins v003
+	customized_prefix_count_max	: constant natural := 20; -- ins v003
 	type customized_prefixes_type is array (natural range <>) of universal_string_type.bounded_string; -- ins v003
 	subtype customized_prefixes_type_sized is customized_prefixes_type (1..customized_prefix_count_max); -- ins v003
 	customized_prefixes	: customized_prefixes_type_sized; -- ins v003
 	customized_prefixes_count	: natural := 0; -- ins v003
 
-	facility_count_max		: natural := 3; -- ins v003
+	facility_count_max		: constant natural := 3; -- ins v003
 	facility_count			: natural; -- ins v003
 	type facility_name_type is array (natural range <>) of string (1..3);
 	subtype facility_name_type_sized is facility_name_type (1..facility_count_max);

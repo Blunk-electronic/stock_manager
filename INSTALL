@@ -1,22 +1,25 @@
 STOCK MANAGER INSTALLATION
 --------------------------
 
-1. Download 
+1. Download the zipped archive from
 
-https://github.com/Blunk-electronic/stock_manager/archive/v01x.tar.gz
+https://github.com/Blunk-electronic/stock_manager
 
 
 2. Unpack the archive
 
-gunzip stock_manager-01x.tar.gz
-tar -xf stock_manager-01x.tar
+3. change into root directory of stock_manager
+
+4. sh install (the executable binary file gets copied into $HOME/bin)
+
+5. edit .stock_manager/conf/stock_manager.conf
 
 
-3. cd stock_manager-01x/src
 
-4. make
+STOCK MANAGER UNINSTALLATION
+----------------------------
 
-5. copy the executable file "stock_manager" where you need it (e.g. $HOME/bin)
+1. change into root directory of stock_manager
 
-6. read stock_manager/conf/readme.txt
+2. sh uninstall
 
