@@ -1,13 +1,13 @@
 TARGET = stock_manager
 
-VPATH = include
-OBJS = $(TARGET).o m1_internal.o m1_numbers.o m1.o csv.o
+VPATH = lib
+OBJS = $(TARGET).o sm_string_processing.o sm_csv.o
 PREFIX = $(HOME)
 BINDIR = $(PREFIX)/bin
 
 # compile
 .adb.o:
-	gcc -c $< -I include
+	gcc -c $< -I $(VPATH)
 .SUFFIXES: .adb .o
 
 # link

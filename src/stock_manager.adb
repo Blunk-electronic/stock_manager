@@ -3,7 +3,7 @@
 --                             STOCK MANAGER                                --
 --                                                                          --
 --                                                                          --
---         Copyright (C) 2015 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -21,7 +21,7 @@
 
 --   Please send your questions and comments to:
 --
---   Mario.Blunk@blunk-electronic.de
+--   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
 --
 --
@@ -93,47 +93,39 @@
 -- When assigning part codes (facility, manufacturer, distributor), a warning is issued if code already used.
 
 
-with Ada.Text_IO;			use Ada.Text_IO;
-with Ada.Integer_Text_IO;	use Ada.Integer_Text_IO;
---with Ada.Float_Text_IO;		use Ada.Float_Text_IO;
-with Ada.Characters.Handling;
-use Ada.Characters.Handling;
+with ada.text_io;				use ada.text_io;
+with ada.integer_text_io;		use ada.integer_text_io;
+with ada.characters.handling;	use ada.characters.handling;
 
---with System.OS_Lib;   use System.OS_Lib;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Strings.Bounded; 	use Ada.Strings.Bounded;
-with Ada.Strings.Fixed; 	use Ada.Strings.Fixed;
-with Ada.Strings.Maps;
---with Ada.Strings.maps.constants; 		use Ada.Strings.maps.constants;
-with Ada.Strings; 			use Ada.Strings;
-with Ada.Numerics;			use Ada.Numerics;
-with Ada.Numerics.Elementary_Functions;	use Ada.Numerics.Elementary_Functions;
+with ada.strings.unbounded; 	use ada.strings.unbounded;
+with ada.strings.bounded; 		use ada.strings.bounded;
+with ada.strings.fixed; 		use ada.strings.fixed;
+with ada.strings.maps;
+with ada.strings; 				use ada.strings;
+with ada.numerics.elementary_functions;	use ada.numerics.elementary_functions;
 
-with Ada.Strings.Unbounded.Text_IO; use Ada.Strings.Unbounded.Text_IO;
---with Ada.Task_Identification;  use Ada.Task_Identification;
-with Ada.Exceptions; use Ada.Exceptions;
+with ada.strings.unbounded.text_io; use ada.strings.unbounded.text_io;
+with ada.exceptions; 			use ada.exceptions;
  
-with GNAT.OS_Lib;   	use GNAT.OS_Lib;
-with Ada.Command_Line;	use Ada.Command_Line;
-with Ada.Directories;	use Ada.Directories;
+with gnat.os_lib;   			use gnat.os_lib;
+with ada.command_line;			use ada.command_line;
+with ada.directories;			use ada.directories;
 with ada.environment_variables;
  
-with Ada.Calendar;				use Ada.Calendar;
-with Ada.Calendar.Formatting;	use Ada.Calendar.Formatting;
-with Ada.Calendar.Time_Zones;	use Ada.Calendar.Time_Zones;
+with ada.calendar;				use ada.calendar;
+with ada.calendar.formatting;	use ada.calendar.formatting;
+with ada.calendar.time_zones;	use ada.calendar.time_zones;
 
-with Ada.Containers.Generic_Array_Sort;
-with Ada.Containers.Generic_Constrained_Array_Sort;
+with ada.containers.generic_array_sort;
+with ada.containers.generic_constrained_array_sort;
 
-with m1; use m1;
-with csv; use csv;
+with sm_string_processing;	use sm_string_processing;
+with sm_csv;				use sm_csv;
 
 procedure stock_manager is
 
 
-	version			: String (1..3) := "013";
-
-	--part_count_max			: natural := 300; -- defines max. count of positions on stock
+	version			: String (1..3) := "014";
 
 	part_count_max2			: natural;
 	empty_lines_count		: natural := 0;
@@ -142,7 +134,6 @@ procedure stock_manager is
 	distributor_count_max 	: natural := 6;
 
 	default_date	: string (1..19) := "0000-00-00 00:00:00";
-	--date_now		: string (1..19) := image(clock, time_zone => UTC_Time_Offset(clock));
 	now				: time := clock;
 	date_now		: string (1..19) := image(now, time_zone => UTC_Time_Offset(now));
 
@@ -152,9 +143,6 @@ procedure stock_manager is
 	arg_ct_prj		: natural := 0;
 	arg_ct_bom		: natural := 0;
 	arg_ct_fac		: natural := 0;
-
--- 	previous_input			: Ada.Text_IO.File_Type renames current_input;
--- 	previous_output			: Ada.Text_IO.File_Type renames current_output;
 
 	parts_db_file			: Ada.Text_IO.File_Type;
 	stock_db_file			: Ada.Text_IO.File_Type;
@@ -661,34 +649,34 @@ procedure stock_manager is
 				line := get_line;
 
 				-- get language
-				if m1.get_field(line,1,' ') = "language" then 
+				if sm_string_processing.get_field(line,1,' ') = "language" then 
 					prog_position := "ENV20";
-					language := language_type'value(m1.get_field(line,2,' '));
+					language := language_type'value(sm_string_processing.get_field(line,2,' '));
 					if debug_mode = 1 then 
 						put_line("language        : " & language_type'image(language));
 					end if;
 				end if;
 
 				-- get currency
-				if m1.get_field(line,1,' ') = "currency" then 
+				if sm_string_processing.get_field(line,1,' ') = "currency" then 
 					prog_position := "ENV30";
-					currency := currency_type'value(m1.get_field(line,2,' '));
+					currency := currency_type'value(sm_string_processing.get_field(line,2,' '));
 					if debug_mode = 1 then 
 						put_line("currency        : " & currency_type'image(currency));
 					end if;
 				end if;
 
 				-- get location of log file
-				if m1.get_field(line,1,' ') = "directory_of_log" then 
+				if sm_string_processing.get_field(line,1,' ') = "directory_of_log" then 
 					prog_position := "ENV40";
-					if m1.get_field(line,2,' ')(1) /= '/' then -- if no leading "/", take this as relative to home directory
+					if sm_string_processing.get_field(line,2,' ')(1) /= '/' then -- if no leading "/", take this as relative to home directory
 						directory_of_log := to_unbounded_string(to_string(home_directory)) & 
-							to_unbounded_string(m1.get_field(line,2,' ')) & "/";
+							to_unbounded_string(sm_string_processing.get_field(line,2,' ')) & "/";
 						log_file_txt := to_unbounded_string(to_string(home_directory)) & 
-							to_unbounded_string(m1.get_field(line,2,' ')) & "/" &
+							to_unbounded_string(sm_string_processing.get_field(line,2,' ')) & "/" &
 						simple_name(to_string(log_file_txt));
 					else -- otherwise it is an absolute path
-						directory_of_log := to_unbounded_string(m1.get_field(line,2,' ')) & "/";
+						directory_of_log := to_unbounded_string(sm_string_processing.get_field(line,2,' ')) & "/";
 						log_file_txt := directory_of_log & simple_name(to_string(log_file_txt));
 					end if;
 					if debug_mode = 1 then 
@@ -697,16 +685,16 @@ procedure stock_manager is
 				end if;
 
 				-- get location of stock db file
-				if m1.get_field(line,1,' ') = "directory_of_stock_data_base" then 
+				if sm_string_processing.get_field(line,1,' ') = "directory_of_stock_data_base" then 
 					prog_position := "ENV50";
-					if m1.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
+					if sm_string_processing.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
 						prog_position := "ENV51";
 						stock_db_csv := to_unbounded_string(to_string(home_directory)) &
-							to_unbounded_string(m1.get_field(line,2,' ')) & "/" &
+							to_unbounded_string(sm_string_processing.get_field(line,2,' ')) & "/" &
 							simple_name(to_string(stock_db_csv));
 					else -- otherwise it is an absolute path
 						prog_position := "ENV52";
-						stock_db_csv := to_unbounded_string(m1.get_field(line,2,' ')) & "/" &
+						stock_db_csv := to_unbounded_string(sm_string_processing.get_field(line,2,' ')) & "/" &
 							simple_name(to_string(stock_db_csv));
 					end if;
 					prog_position := "ENV53";
@@ -716,13 +704,13 @@ procedure stock_manager is
 				end if;
 
 				-- get location of backup files
-				if m1.get_field(line,1,' ') = "directory_of_backup" then 
+				if sm_string_processing.get_field(line,1,' ') = "directory_of_backup" then 
 					prog_position := "ENV60";
-					if m1.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
+					if sm_string_processing.get_field(line,2,' ')(1) /= '/' then -- if no heading /, take this as relative to home directory
 						directory_of_backup := to_unbounded_string(to_string(home_directory)) &
-							to_unbounded_string(m1.get_field(line,2,' ')); -- & "/" & simple_name(to_string(directory_of_backup));
+							to_unbounded_string(sm_string_processing.get_field(line,2,' ')); -- & "/" & simple_name(to_string(directory_of_backup));
 					else -- otherwise it is an absolute path
-						directory_of_backup := to_unbounded_string(m1.get_field(line,2,' '));
+						directory_of_backup := to_unbounded_string(sm_string_processing.get_field(line,2,' '));
 					end if;
 					prog_position := "ENV61";
 					if debug_mode = 1 then 
@@ -737,14 +725,14 @@ procedure stock_manager is
 				end if;
 
 				-- get facility name
-				if m1.get_field(line,1,' ') = "facility_name" then 
+				if sm_string_processing.get_field(line,1,' ') = "facility_name" then 
 					prog_position := "ENV70";
-					scratch_natural := m1.get_field_count(line); -- get number of facility names given in conf file
+					scratch_natural := sm_string_processing.get_field_count(line); -- get number of facility names given in conf file
 					for f in 2..scratch_natural
 					loop
-						facility_names(f-1) := to_upper(m1.get_field(line,f));
+						facility_names(f-1) := to_upper(sm_string_processing.get_field(line,f));
 						facility_count	:= scratch_natural-1;
-						--facility_name := to_upper(m1.get_field(line,2,' ')); -- rm v003
+						--facility_name := to_upper(sm_string_processing.get_field(line,2,' ')); -- rm v003
 						if debug_mode = 1 then 
 							put("facilities      : " & facility_names(f-1)); new_line;
 						end if;
@@ -754,12 +742,12 @@ procedure stock_manager is
 
 				-- ins v003 begin
 				-- get customer specific item prefixes which may exist in the eagle bom file
-				if m1.get_field(line,1,' ') = "customer_prefixes" then 
+				if sm_string_processing.get_field(line,1,' ') = "customer_prefixes" then 
 					prog_position := "ENV80";
-					scratch_natural := m1.get_field_count(line); -- get number of prefixes given in conf file
+					scratch_natural := sm_string_processing.get_field_count(line); -- get number of prefixes given in conf file
 					for f in 2..scratch_natural -- loop through prefixes 
 					loop						-- and save them in customized_prefixes (1 based counting)
-						customized_prefixes(f-1) := to_bounded_string(to_upper(m1.get_field(line,f)));
+						customized_prefixes(f-1) := to_bounded_string(to_upper(sm_string_processing.get_field(line,f)));
 						customized_prefixes_count := scratch_natural-1;
 						if debug_mode = 1 then 
 							put("customer_prefix : "); put(to_string(customized_prefixes(f-1))); new_line;
@@ -861,8 +849,8 @@ procedure stock_manager is
 		end loop;
 		-- we are interested in the last line. once the loop has finished line holds the last line of the file read
 		-- the line holds for example: "2015-03-11 09:46:15    | edit  7  distributor_6_price_net  6"
-		date := to_bounded_string(csv.get_field(line,1,' ')); -- get date
-		time := to_bounded_string(csv.get_field(line,2,' ')); -- get time
+		date := to_bounded_string(sm_csv.get_field(line,1,' ')); -- get date
+		time := to_bounded_string(sm_csv.get_field(line,2,' ')); -- get time
 		replace_element(time,3,'-'); replace_element(time,6,'-'); -- replace : by - to get 09-46-15 (HH-MM-SS)
 		--put_line(to_string("BAK_" & date & "_" & time & "__" & simple_name(to_string(stock_db_csv)))); -- compose full file name
 		set_input(previous_input);
@@ -1418,50 +1406,50 @@ procedure stock_manager is
 		while not end_of_file
 			loop
 				line:=get_line;
-					if csv.get_field_count(line) > 0 then -- line must not be empty
+					if sm_csv.get_field_count(line) > 0 then -- line must not be empty
 						if part_section_entered then -- if part section entered
 							--put_line(standard_output,line);
 							part_pointer := part_pointer + 1;
 							prog_position := "RD002";
 							part_stock_array(part_pointer).part_id := part_pointer;
-							part_stock_array(part_pointer).part_code_fac := to_bounded_string(csv.get_field(line,1));
+							part_stock_array(part_pointer).part_code_fac := to_bounded_string(sm_csv.get_field(line,1));
 
-							if csv.get_field(line,2) /= "" then
+							if sm_csv.get_field(line,2) /= "" then
 								part_stock_array(part_pointer).distributors(1).name := to_bounded_string("REICHELT");
-								part_stock_array(part_pointer).distributors(1).order_code := to_bounded_string(csv.get_field(line,2));
+								part_stock_array(part_pointer).distributors(1).order_code := to_bounded_string(sm_csv.get_field(line,2));
 							end if;
-							if csv.get_field(line,3) /= "" then
+							if sm_csv.get_field(line,3) /= "" then
 								part_stock_array(part_pointer).distributors(2).name := to_bounded_string("AX");
-								part_stock_array(part_pointer).distributors(2).order_code := to_bounded_string(csv.get_field(line,3));
+								part_stock_array(part_pointer).distributors(2).order_code := to_bounded_string(sm_csv.get_field(line,3));
 							end if;
-							if csv.get_field(line,4) /= "" then
+							if sm_csv.get_field(line,4) /= "" then
 								part_stock_array(part_pointer).distributors(3).name := to_bounded_string("FARNELL");
-								part_stock_array(part_pointer).distributors(3).order_code := to_bounded_string(csv.get_field(line,4));
+								part_stock_array(part_pointer).distributors(3).order_code := to_bounded_string(sm_csv.get_field(line,4));
 							end if;
-							if csv.get_field(line,5) /= "" then
+							if sm_csv.get_field(line,5) /= "" then
 								part_stock_array(part_pointer).distributors(4).name := to_bounded_string("DIGI-KEY");
-								part_stock_array(part_pointer).distributors(4).order_code := to_bounded_string(csv.get_field(line,5));
+								part_stock_array(part_pointer).distributors(4).order_code := to_bounded_string(sm_csv.get_field(line,5));
 							end if;
-							if csv.get_field(line,6) /= "" then
+							if sm_csv.get_field(line,6) /= "" then
 								part_stock_array(part_pointer).distributors(5).name := to_bounded_string("MOUSER");
-								part_stock_array(part_pointer).distributors(5).order_code := to_bounded_string(csv.get_field(line,6));
+								part_stock_array(part_pointer).distributors(5).order_code := to_bounded_string(sm_csv.get_field(line,6));
 							end if;
-							if csv.get_field(line,8) /= "" then
+							if sm_csv.get_field(line,8) /= "" then
 								part_stock_array(part_pointer).distributors(6).name := to_bounded_string("RS");
-								part_stock_array(part_pointer).distributors(6).order_code := to_bounded_string(csv.get_field(line,8));
+								part_stock_array(part_pointer).distributors(6).order_code := to_bounded_string(sm_csv.get_field(line,8));
 							end if;
 
-							if csv.get_field(line,9) /= "" then
-								part_stock_array(part_pointer).manufacturers(1).part_code := to_bounded_string(csv.get_field(line,9));
+							if sm_csv.get_field(line,9) /= "" then
+								part_stock_array(part_pointer).manufacturers(1).part_code := to_bounded_string(sm_csv.get_field(line,9));
 							end if;
 
- 							if csv.get_field(line,10) /= "" then
- 								part_stock_array(part_pointer).manufacturers(1).url_datasheet_1 := to_unbounded_string(csv.get_field(line,10));
+ 							if sm_csv.get_field(line,10) /= "" then
+ 								part_stock_array(part_pointer).manufacturers(1).url_datasheet_1 := to_unbounded_string(sm_csv.get_field(line,10));
  							end if;
 
 						end if; -- if part section entered
 
-						if csv.get_field(line,1) = "PART_CODE_BEL" then	-- set part_section_entered flag upon passing the part_code_facility line
+						if sm_csv.get_field(line,1) = "PART_CODE_BEL" then	-- set part_section_entered flag upon passing the part_code_facility line
 							part_section_entered := true;
 						end if;
 
@@ -1604,36 +1592,36 @@ procedure stock_manager is
 				loop
 					line:=get_line;
 					if part_section_entered then
-						if csv.get_field(line,6) = "YES" then -- part must be registerd -- insist on capital letters
-							--if csv.get_field(line,9) /= "" then -- if field is empty, no part code present, abort -- rm v003
+						if sm_csv.get_field(line,6) = "YES" then -- part must be registerd -- insist on capital letters
+							--if sm_csv.get_field(line,9) /= "" then -- if field is empty, no part code present, abort -- rm v003
 
 							-- now, for checking the facility part code, the column detetected earlier is to be used
-							if csv.get_field(line,column_of_part_code_facility_in_eagle_bom) /= "" then -- if field is empty, no part code present, abort -- ins v003
+							if sm_csv.get_field(line,column_of_part_code_facility_in_eagle_bom) /= "" then -- if field is empty, no part code present, abort -- ins v003
 								part_ct_proj := part_ct_proj + 1; -- otherwise count parts
 
 								-- count SMD and THT parts
 								-- cut off characters starting at pos. 4 -- CS: unclear why the first character of this string is at pos. 2
 								-- so that the prefix S_ or T_ remains from the package field.
 								-- then test for S_ or T_ and count occurences
-								if delete(csv.get_field(line,4),4,csv.get_field(line,4)'last) = "S_" then 
+								if delete(sm_csv.get_field(line,4),4,sm_csv.get_field(line,4)'last) = "S_" then 
 									part_ct_proj_smd := part_ct_proj_smd + 1;
 								end if;
 
-								if delete(csv.get_field(line,4),4,csv.get_field(line,4)'last) = "T_" then 
+								if delete(sm_csv.get_field(line,4),4,sm_csv.get_field(line,4)'last) = "T_" then 
 									part_ct_proj_tht := part_ct_proj_tht + 1;
 								end if;
 
 							else -- if facility part code is empty
 								prog_position := "CP010";
-								put_line(standard_output,"ERROR : No facility part code found for part '" & csv.get_field(line,1) & "' !");
+								put_line(standard_output,"ERROR : No facility part code found for part '" & sm_csv.get_field(line,1) & "' !");
 								raise constraint_error;
 							end if;
 
-						elsif csv.get_field(line,6) = "NO" then -- we have a virtual device (like testpoints or fiducials)
+						elsif sm_csv.get_field(line,6) = "NO" then -- we have a virtual device (like testpoints or fiducials)
 							part_ct_proj_virtual := part_ct_proj_virtual + 1; -- count virtual parts
 						else -- it is a non registered part -> abort
 							prog_position := "CP020";
-							put_line(standard_output,"ERROR : Part '" & csv.get_field(line,1) & "' is not registered !");
+							put_line(standard_output,"ERROR : Part '" & sm_csv.get_field(line,1) & "' is not registered !");
 							put_line(standard_output,"        Check your design !");
 							raise constraint_error;
 						end if;
@@ -1642,21 +1630,21 @@ procedure stock_manager is
 					if not part_section_entered then 
 						-- if table header found
 						prog_position := "CP050";
-						if csv.get_field(line,1) = "Part" and csv.get_field(line,2) = "Value" and
-							csv.get_field(line,3) = "Device" and csv.get_field(line,4) = "Package" and
-							csv.get_field(line,5) = "Description" and csv.get_field(line,6) = "BOM" and
-							--csv.get_field(line,7) = "COMMISSIONED" and csv.get_field(line,8) = "FUNCTION" and -- rm v003
+						if sm_csv.get_field(line,1) = "Part" and sm_csv.get_field(line,2) = "Value" and
+							sm_csv.get_field(line,3) = "Device" and sm_csv.get_field(line,4) = "Package" and
+							sm_csv.get_field(line,5) = "Description" and sm_csv.get_field(line,6) = "BOM" and
+							--sm_csv.get_field(line,7) = "COMMISSIONED" and sm_csv.get_field(line,8) = "FUNCTION" and -- rm v003
 
 							-- ins v003 begin
 							-- the column that holds the facility part code must be detected
-							csv.get_field(line,7) = "COMMISSIONED" and csv.get_field(line,8) = "FUNCTION" then
+							sm_csv.get_field(line,7) = "COMMISSIONED" and sm_csv.get_field(line,8) = "FUNCTION" then
 								find_part_code_column:
 								for f in 9..11 -- search in fields 9..11 for PART_CODE_FACILITY -- cs: search other fields ?
 								loop
 									for fa in 1..facility_count -- search for facility
 									loop -- the primary facility code will be searched for first, then other facilities in 
 										-- the order they appear in the conf file
-										if csv.get_field(line,f) = "PART_CODE_" & facility_names(fa) then
+										if sm_csv.get_field(line,f) = "PART_CODE_" & facility_names(fa) then
 											prog_position := "CP055";
 											if fa > 1 then -- if alternative facility code match
 												prog_position := "CP056";
@@ -1680,7 +1668,7 @@ procedure stock_manager is
 								end loop find_part_code_column;
 							-- ins v003 end
 
-							--csv.get_field(line,9) = "PART_CODE_" & facility_name then -- rm v003
+							--sm_csv.get_field(line,9) = "PART_CODE_" & facility_name then -- rm v003
 							-- set part_section_entered flag
 							--part_section_entered := true; -- rm v003
 						end if;
@@ -1807,11 +1795,11 @@ procedure stock_manager is
 				prog_position := "OL420";
 				put_field(text => "STOCK MANAGER V" & version & " ORDER LIST"); put_lf;
 				prog_position := "OL421";
-				put_field(text => csv.row_separator_2); put_lf;
+				put_field(text => sm_csv.row_separator_2); put_lf;
 				put_field(text => "BOARD:"); put_field(text => base_name(to_string(facility_bom_csv))); put_lf;
 				put_field(text => "NUMBER OF UNITS: "); put_field(text => natural'image(quantity_of_units)); put_lf(count => 2);
 				put_field(text => "DATE:"); put_field(text => date_now); put_field(text => "(YYYY:MM:DD HH:MM:SS)"); put_lf;
-				put_field(text => csv.row_separator_1); put_lf;
+				put_field(text => sm_csv.row_separator_1); put_lf;
 				put_field(text => "POS."); put_field(text => "PART_ID"); put_field(text => "PART_CODE_" & facility_names(1)); put_field(text => "QTY");
 
 				-- write table header for ordering information
@@ -1948,25 +1936,25 @@ procedure stock_manager is
 					--put_line(standard_output, line);
 
 					-- look for end of BOM mark in column 1
-					if csv.get_field(line,1) = csv.row_separator_1 then 
+					if sm_csv.get_field(line,1) = sm_csv.row_separator_1 then 
 						exit; -- stop reading the bom file
 					end if;
 
-					--put_line("field ct : " & natural'image(csv.get_field_count(line)));
-					if csv.get_field(line,1) /= "" then -- if first position found, the first field is not empty
+					--put_line("field ct : " & natural'image(sm_csv.get_field_count(line)));
+					if sm_csv.get_field(line,1) /= "" then -- if first position found, the first field is not empty
 						--put_line(standard_output, line);
 						prog_position := "CF070";
 						position_pt := position_pt + 1; -- advance position pointer
-						facility_bom_part_array(position_pt).position := natural'value(csv.get_field(line,1));
-						facility_bom_part_array(position_pt).qty := quantity_of_units * natural'value(csv.get_field(line,2));
-						facility_bom_part_array(position_pt).name := to_unbounded_string(csv.get_field(line,3));
-						facility_bom_part_array(position_pt).part_code := to_bounded_string(csv.get_field(line,4));
-						facility_bom_part_array(position_pt).part_id := natural'value(csv.get_field(line,5));
+						facility_bom_part_array(position_pt).position := natural'value(sm_csv.get_field(line,1));
+						facility_bom_part_array(position_pt).qty := quantity_of_units * natural'value(sm_csv.get_field(line,2));
+						facility_bom_part_array(position_pt).name := to_unbounded_string(sm_csv.get_field(line,3));
+						facility_bom_part_array(position_pt).part_code := to_bounded_string(sm_csv.get_field(line,4));
+						facility_bom_part_array(position_pt).part_id := natural'value(sm_csv.get_field(line,5));
 					end if;
 				else
 					-- look for table header in column 1
 					prog_position := "CF080";
-					if csv.get_field(line,1) = "POS." then 
+					if sm_csv.get_field(line,1) = "POS." then 
 						part_section_entered := true;
 					end if;
 				end if; -- if part_section_entered
@@ -2301,13 +2289,13 @@ procedure stock_manager is
 				line:=get_line;
 				prog_position := "RB020";
 					if part_section_entered then
-						if to_lower(csv.get_field(line,6,';')) = "yes" then
+						if to_lower(sm_csv.get_field(line,6,';')) = "yes" then
 							prog_position := "RB030";
 							ct := ct + 1; -- count parts
 							--put_line(natural'image(ct) & " " & line);
 							-- fill project_part array
-							project_part(ct).part	 		:= to_bounded_string(csv.get_field(line,1,';'));
-							project_part(ct).value	 		:= to_bounded_string(csv.get_field(line,2,';'));
+							project_part(ct).part	 		:= to_bounded_string(sm_csv.get_field(line,1,';'));
+							project_part(ct).value	 		:= to_bounded_string(sm_csv.get_field(line,2,';'));
 
 							-- make sure there is no forbidden character in the value field
 							prog_position := "RB100";
@@ -2318,18 +2306,18 @@ procedure stock_manager is
 							end if;
 
 							prog_position := "RB200";
-							project_part(ct).device 		:= to_bounded_string(csv.get_field(line,3,';'));
-							project_part(ct).packge 		:= to_bounded_string(csv.get_field(line,4,';'));
-							project_part(ct).description	:= to_bounded_string(csv.get_field(line,5,';'));
-							project_part(ct).commissioned	:= to_bounded_string(check_date(csv.get_field(line,7)));
-							project_part(ct).funct	 		:= to_bounded_string(csv.get_field(line,8,';'));
+							project_part(ct).device 		:= to_bounded_string(sm_csv.get_field(line,3,';'));
+							project_part(ct).packge 		:= to_bounded_string(sm_csv.get_field(line,4,';'));
+							project_part(ct).description	:= to_bounded_string(sm_csv.get_field(line,5,';'));
+							project_part(ct).commissioned	:= to_bounded_string(check_date(sm_csv.get_field(line,7)));
+							project_part(ct).funct	 		:= to_bounded_string(sm_csv.get_field(line,8,';'));
 
 							-- ins v003 begin
 							-- make sure, the facility part code is valid
 							--prog_position := "RB210";
-							--put_line(standard_output,"part_code_fac : " & csv.get_field(line,9));
+							--put_line(standard_output,"part_code_fac : " & sm_csv.get_field(line,9));
 							prog_position := "RB211";
-							if parse_part_code(trim(csv.get_field(line,column_of_part_code_facility_in_eagle_bom),both)) = false then
+							if parse_part_code(trim(sm_csv.get_field(line,column_of_part_code_facility_in_eagle_bom),both)) = false then
 								put_line(standard_output,"ERROR : Part " & to_string(project_part(ct).part) & " has forbidden characters in its facility part code !");
 								new_line(standard_output); -- ins v003
 								--put_line(standard_output,"        Found value '" & to_string(project_part(ct).value) & "'");
@@ -2337,12 +2325,12 @@ procedure stock_manager is
 								raise constraint_error;
 							else
 								prog_position := "RB213";
-								project_part(ct).part_code_fac	:= to_bounded_string(trim(csv.get_field(line,column_of_part_code_facility_in_eagle_bom),both));
+								project_part(ct).part_code_fac	:= to_bounded_string(trim(sm_csv.get_field(line,column_of_part_code_facility_in_eagle_bom),both));
 							end if;
 							prog_position := "RB214";
 							-- ins v003 end
 
-							--project_part(ct).part_code_fac	:= to_bounded_string(trim(csv.get_field(line,9),both)); -- rm v003
+							--project_part(ct).part_code_fac	:= to_bounded_string(trim(sm_csv.get_field(line,9),both)); -- rm v003
 
 							-- verify if prefix is valid
 							prog_position := "RB300"; -- rm v003
@@ -2497,7 +2485,7 @@ procedure stock_manager is
 					end if; -- if part section entered
 
 					prog_position := "RB890";
-					if csv.get_field(line,1,';') = "Part" then -- set part_section_entered flag upon passing the "Part" field -- ins v003
+					if sm_csv.get_field(line,1,';') = "Part" then -- set part_section_entered flag upon passing the "Part" field -- ins v003
 						prog_position := "RB900";
 						part_section_entered := true;
 					end if;
@@ -2701,20 +2689,20 @@ procedure stock_manager is
 					put("parts affected  : ");
 
 					-- the list of parts affected needs to be reduced to max. 5 positions
-					if csv.get_field_count(parts_of_same_value,',') > 5 then 
+					if sm_csv.get_field_count(parts_of_same_value,',') > 5 then 
 						for psv in 1..5
 						loop
-							put(csv.get_field(parts_of_same_value,psv,','));
+							put(sm_csv.get_field(parts_of_same_value,psv,','));
 							put(",");
 						end loop;
 						put(" ...");
 					--end if; -- rm v004
 					-- ins v004 begin
 					else -- otherwise put affected parts one by one
-						for psv in 1..csv.get_field_count(parts_of_same_value,',') -- process as many items as affected
+						for psv in 1..sm_csv.get_field_count(parts_of_same_value,',') -- process as many items as affected
 						loop
-							put(csv.get_field(parts_of_same_value,psv,',')); -- put item
-							if psv < csv.get_field_count(parts_of_same_value,',') then -- do not put a comma after last item
+							put(sm_csv.get_field(parts_of_same_value,psv,',')); -- put item
+							if psv < sm_csv.get_field_count(parts_of_same_value,',') then -- do not put a comma after last item
 								put(",");
 							end if;
 						end loop;
@@ -2736,7 +2724,7 @@ procedure stock_manager is
 		--for i in 1..columns_of_facility_bom -- rm v010
 		for i in 1..columns_of_facility_bom + manufacturer_count_max -- ins v010
 		loop
-			put_field(text => csv.row_separator_1);
+			put_field(text => sm_csv.row_separator_1);
 		end loop;
 		put_lf;
 
@@ -2784,10 +2772,10 @@ procedure stock_manager is
 			while not end_of_file
 				loop
 					line:=get_line;
-						--if csv.get_field_count(line) > 0 then -- line must not be empty
+						--if sm_csv.get_field_count(line) > 0 then -- line must not be empty
 
 							--clear part_section_entered flag upon passing the end of stock mark
-							if csv.get_field(line,1) = "END OF STOCK" then	
+							if sm_csv.get_field(line,1) = "END OF STOCK" then	
 								part_section_entered := false;
 							end if;
 
@@ -2851,7 +2839,7 @@ procedure stock_manager is
 							prog_position := "RS015";
 
 							-- set part_section_entered flag upon passing the PART_ID line
-							if csv.get_field(line,1) = "PART_ID" then	
+							if sm_csv.get_field(line,1) = "PART_ID" then	
 								part_section_entered := true;
 							end if;
 
@@ -3710,26 +3698,26 @@ procedure stock_manager is
 				line := get_line;
 
  				-- count empty lines upon passing an id=0 field
- 				if csv.get_field(line,1) = "0" then	
+ 				if sm_csv.get_field(line,1) = "0" then	
  					empty_lines_count := empty_lines_count + 1;
 					--put_line("empty_lines_count :" & natural'image(empty_lines_count));
  				end if;
 
 				-- stop counting lines upon passing end of stock mark
-				if csv.get_field(line,1) = "END OF STOCK" then	
+				if sm_csv.get_field(line,1) = "END OF STOCK" then	
 					part_section_entered := false;
 				end if;
 
 
 				if part_section_entered then
-					--if csv.get_field(line,1) /= "0" then
+					--if sm_csv.get_field(line,1) /= "0" then
 						part_count_max2 := part_count_max2 + 1;
 					--end if;
 				end if;
 
 				prog_position := "SC150";
 				-- set part_section_entered flag upon passing the PART_ID line
-				if csv.get_field(line,1) = "PART_ID" then	
+				if sm_csv.get_field(line,1) = "PART_ID" then	
 					part_section_entered := true;
 				end if;
 
@@ -3769,29 +3757,29 @@ procedure stock_manager is
 				prog_position := "MBA10";
 
 				-- look for end of BOM mark in column 1
-				if csv.get_field(line,1) = csv.row_separator_1 then 
+				if sm_csv.get_field(line,1) = sm_csv.row_separator_1 then 
 					exit; -- stop reading the bom file
 				end if;
 
-				if csv.get_field(line,1) /= "" then -- if first position found, the first field is not empty
+				if sm_csv.get_field(line,1) /= "" then -- if first position found, the first field is not empty
 					prog_position := "MBA20";
 					position_pt := position_pt + 1; -- advance position pointer
 					prog_position := "MBA21";
-					facility_bom_part_array(position_pt).position := natural'value(csv.get_field(line,1));
+					facility_bom_part_array(position_pt).position := natural'value(sm_csv.get_field(line,1));
  					prog_position := "MBA22";
-					facility_bom_part_array(position_pt).qty := natural'value(csv.get_field(line,2));
+					facility_bom_part_array(position_pt).qty := natural'value(sm_csv.get_field(line,2));
 					prog_position := "MBA23";
-					facility_bom_part_array(position_pt).name := to_unbounded_string(csv.get_field(line,3));
+					facility_bom_part_array(position_pt).name := to_unbounded_string(sm_csv.get_field(line,3));
 					prog_position := "MBA24";
-					facility_bom_part_array(position_pt).part_code := to_bounded_string(csv.get_field(line,4));
+					facility_bom_part_array(position_pt).part_code := to_bounded_string(sm_csv.get_field(line,4));
 					prog_position := "MBA25";
-					facility_bom_part_array(position_pt).part_id := natural'value(csv.get_field(line,5));
+					facility_bom_part_array(position_pt).part_id := natural'value(sm_csv.get_field(line,5));
 				end if;
 
 			else
 				-- look for table header in column 1
 				prog_position := "MBA40";
-				if csv.get_field(line,1) = "POS." then 
+				if sm_csv.get_field(line,1) = "POS." then 
 					part_section_entered := true;
 				end if;
 			end if; -- if part_section_entered
@@ -3836,24 +3824,24 @@ procedure stock_manager is
 -- 				prog_position := "SB020";
 -- 
 -- 				-- look for end of BOM mark in column 1
--- 				if csv.get_field(line,1) = csv.row_separator_1 then 
+-- 				if sm_csv.get_field(line,1) = sm_csv.row_separator_1 then 
 -- 					exit; -- stop reading the bom file
 -- 				end if;
 -- 
--- 				if csv.get_field(line,1) /= "" then -- if first position found, the first field is not empty
+-- 				if sm_csv.get_field(line,1) /= "" then -- if first position found, the first field is not empty
 -- 					prog_position := "SB030";
 -- 					position_pt := position_pt + 1; -- advance position pointer
--- 					facility_bom_part_array(position_pt).position := natural'value(csv.get_field(line,1));
--- 					facility_bom_part_array(position_pt).qty := natural'value(csv.get_field(line,2));
--- 					facility_bom_part_array(position_pt).name := to_unbounded_string(csv.get_field(line,3));
--- 					facility_bom_part_array(position_pt).part_code := to_bounded_string(csv.get_field(line,4));
--- 					facility_bom_part_array(position_pt).part_id := natural'value(csv.get_field(line,5));
+-- 					facility_bom_part_array(position_pt).position := natural'value(sm_csv.get_field(line,1));
+-- 					facility_bom_part_array(position_pt).qty := natural'value(sm_csv.get_field(line,2));
+-- 					facility_bom_part_array(position_pt).name := to_unbounded_string(sm_csv.get_field(line,3));
+-- 					facility_bom_part_array(position_pt).part_code := to_bounded_string(sm_csv.get_field(line,4));
+-- 					facility_bom_part_array(position_pt).part_id := natural'value(sm_csv.get_field(line,5));
 -- 				end if;
 -- 
 -- 			else
 -- 				-- look for table header in column 1
 -- 				prog_position := "SB040";
--- 				if csv.get_field(line,1) = "POS." then 
+-- 				if sm_csv.get_field(line,1) = "POS." then 
 -- 					part_section_entered := true;
 -- 				end if;
 -- 			end if; -- if part_section_entered
@@ -3912,7 +3900,7 @@ procedure stock_manager is
 		-- write summary
 		for i in 1..5
 		loop
-			put_field(text => csv.row_separator_1);
+			put_field(text => sm_csv.row_separator_1);
 		end loop;
 		put_lf;
 
@@ -4044,7 +4032,7 @@ procedure stock_manager is
 		-- write summary
 		for i in 1..4
 		loop
-			put_field(text => csv.row_separator_1);
+			put_field(text => sm_csv.row_separator_1);
 		end loop;
 		put_lf;
 
