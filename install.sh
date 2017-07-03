@@ -10,6 +10,7 @@ set -e
 
 
 dest_conf_dir=$HOME/.stock_manager
+dest_data_dir=$HOME/stock_manager
 
 echo "Stock_Manager installer version" $version
 
@@ -18,11 +19,11 @@ procedure_operator_confirmation()
 	echo -n "proceed ? (y/n): "
 	read key
 	echo
-	[ ! $key = "y" ] && 
-		{
-		echo "installation aborted by operator"
-		exit 1
-		}
+	if [ ! $key = "y" ] 
+		then
+			echo "aborted by operator"
+			exit 1
+	fi
 	}
 
 procedure_make()
@@ -42,11 +43,21 @@ procedure_make()
 	}
 #CS: ask user if configuration directory should be updated.
 
+[ ! -e $dest_data_dir ] && 
+	{
+	echo "creating stock database directory" $dest_data_dir "..."
+# 	echo "WARNING: All files there will be overwritten !"
+# 	procedure_operator_confirmation
+	cp -R example_database $dest_data_dir
+	}
 
+
+	
 echo "compiling and installing ..."
 set +e
 
 procedure_make
 
-echo done
+echo "installation complete"
+echo "now edit file paths in" $dest_conf_dir/stock_manager.conf
 exit
