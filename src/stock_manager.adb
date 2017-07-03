@@ -646,6 +646,8 @@ procedure stock_manager is
 			loop
 				line := get_line;
 
+				-- CS: write useful error messages if files or directories not found
+				
 				-- get language
 				if sm_string_processing.get_field(line,1,' ') = "language" then 
 					prog_position := "ENV20";

@@ -36,18 +36,20 @@ procedure_make()
 	cd - # change back to origin dir
 	}
 
+# If configuration already exists, leave it as it is.
+# Otherwise create it with a base configuration for evaluation.
 [ ! -e $dest_conf_dir ] && 
 	{
 	echo "creating hidden configuration directory" $dest_conf_dir "..."
 	cp -R conf/stock_manager $dest_conf_dir
 	}
-#CS: ask user if configuration directory should be updated.
+	#CS: ask user if configuration directory should be updated.
 
+# If database directory already exists, leave it as it is.
+# Otherwise create it with a dummy database for evaluation.
 [ ! -e $dest_data_dir ] && 
 	{
 	echo "creating stock database directory" $dest_data_dir "..."
-# 	echo "WARNING: All files there will be overwritten !"
-# 	procedure_operator_confirmation
 	cp -R example_database $dest_data_dir
 	}
 
