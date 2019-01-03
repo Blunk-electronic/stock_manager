@@ -4,7 +4,7 @@ A simple ERP System
 # Installation
 Run the install script:
 
-sh```
+```sh
 sh install.sh
 ```
 
