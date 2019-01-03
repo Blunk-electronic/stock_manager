@@ -1,6 +1,14 @@
 # stock_manager
-Open Source ERP System programmed in ada.
+A simple ERP System
 
+# Installation
+Run the install script:
+
+sh```
+sh install.sh
+```
+
+# Contact
 Contact: Mario Blunk / Blunk electronic / info@blunk-electronic.de
 http://www.blunk-electronic.de / Phone +49 361 6022 5184
 

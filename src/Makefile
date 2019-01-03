@@ -2,7 +2,8 @@ TARGET = stock_manager
 
 VPATH = lib
 OBJS = $(TARGET).o sm_string_processing.o sm_csv.o
-PREFIX = $(HOME)
+#PREFIX = $(HOME)
+PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
 # compile
