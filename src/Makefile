@@ -2,8 +2,11 @@ TARGET = stock_manager
 
 VPATH = lib
 OBJS = $(TARGET).o sm_string_processing.o sm_csv.o
+
+# Edit here if you want to install the binary by default in home/your_home_dir/bin :
 #PREFIX = $(HOME)
 PREFIX = /usr/local
+
 BINDIR = $(PREFIX)/bin
 
 # compile
@@ -21,10 +24,10 @@ install:
 	install -D $(TARGET) $(BINDIR)/$(TARGET)
 
 uninstall:
-	-rm $(BINDIR)/$(TARGET)
+	@rm -f $(BINDIR)/$(TARGET)
 
 clean:
-	rm *.o *.ali $(TARGET)
+	@rm -f *.o *.ali $(TARGET)
 	
 
 

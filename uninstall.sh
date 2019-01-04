@@ -2,14 +2,12 @@
 
 # This is the uninstall script for Stock_Manager. 
 
-version=001
-
 set -e
 
 dest_conf_dir=$HOME/.stock_manager
 dest_data_dir=$HOME/stock_manager
 
-echo "Stock_Manager uninstaller version" $version
+echo "Stock_Manager uninstaller"
 
 procedure_operator_confirmation()
 	{
@@ -30,7 +28,8 @@ procedure_make()
 	cd - # change back to origin dir
 	}
 
-
+echo "uninstalling ..."
+procedure_make
 
 [ -e $dest_conf_dir ] && 
 	{
@@ -46,8 +45,4 @@ procedure_make()
 	rm -rf $dest_data_dir
 	}
 
-	
-echo "uninstalling binaries ..."
-procedure_make
-echo done
 exit
