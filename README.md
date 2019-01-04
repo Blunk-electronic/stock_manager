@@ -1,5 +1,5 @@
-# stock_manager
-A simple ERP System
+# Stock Manager
+A simple ERP system to administrate an electronic component stock
 
 # Installation
 - The installation creates the executable stock_manager by
