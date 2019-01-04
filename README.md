@@ -13,13 +13,21 @@ A simple ERP System
   stock_manager. The database is a csv file named stock_db.csv.
   This directory also contains example files like order and withdrawal lists.
 
-Run the install script:
+In order just to install the sample database run the install script:
 
 ```sh
 sh install.sh
 ```
 
-Edit the configuration file .stock_manager/conf/stock_manager.conf
+<!-- Edit the configuration file .stock_manager/conf/stock_manager.conf -->
+
+To install only the binary file, run the install script with the option 'binary'.
+This of course requires root privileges. The home directory of root remains untouched:
+
+```sh
+sh install.sh binary
+```
+
 
 ## Uninstallation
 
