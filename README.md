@@ -18,6 +18,7 @@ In order just to install the sample database run the install script:
 ```sh
 sh install.sh
 ```
+WARNING: The database already existing in $HOME/stock_manager will be overwritten without warning!
 
 <!-- Edit the configuration file .stock_manager/conf/stock_manager.conf -->
 

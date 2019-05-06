@@ -6,7 +6,6 @@ set -e
 
 #CS: check for ada compiler, gcc, make, ...
 
-
 dest_conf_dir=$HOME/.stock_manager
 dest_data_dir=$HOME/stock_manager
 
@@ -56,13 +55,10 @@ else
 		}
 		#CS: ask user if configuration directory should be updated.
 
-	# If database directory already exists, leave it as it is.
-	# Otherwise create it with a dummy database for evaluation.
-	[ ! -e $dest_data_dir ] && 
-		{
-		echo "creating stock database directory" $dest_data_dir "..."
-		cp -R example_database $dest_data_dir
-		}
+	# Overwrite dummy database and subdirectories.
+	echo "creating stock database directory" $dest_data_dir "..."
+	cp -R example_database/* $dest_data_dir
+
 
 	echo "A sample database has been created:" $dest_data_dir/stock_db.csv
 	echo "Now edit file paths in" $dest_conf_dir/stock_manager.conf
