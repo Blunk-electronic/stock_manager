@@ -3,7 +3,7 @@
 --                             STOCK MANAGER                                --
 --                                                                          --
 --                                                                          --
---         Copyright (C) 2017 Mario Blunk, Blunk electronic                 --
+--         Copyright (C) 2019 Mario Blunk, Blunk electronic                 --
 --                                                                          --
 --    This program is free software: you can redistribute it and/or modify  --
 --    it under the terms of the GNU General Public License as published by  --
@@ -19,10 +19,18 @@
 --    along with this program.  If not, see <http://www.gnu.org/licenses/>. --
 ------------------------------------------------------------------------------
 
+--   For correct displaying set tab with in your edtior to 4.
+
+--   The two letters "CS" indicate a "construction site" where things are not
+--   finished yet or intended for the future.
+
 --   Please send your questions and comments to:
 --
 --   info@blunk-electronic.de
 --   or visit <http://www.blunk-electronic.de> for more contact data
+--
+--   history of changes:
+--
 --
 --
 -- to do:
@@ -32,65 +40,6 @@
 -- create log directory if not present
 -- if storage places assigned, make sure the place is available (probably not a good idea)
 -- parse for valid accessories in function parse_part_code
-
--- history of changes
--- v003:
--- improved make_bom function: 
---		- configuration file supports customer specific prefixes
---		- eagle bom file header is searched for column holding part_code_fac
---		  in order to allow reading eagle bom files of third parties.
---		- alternative facility names supported in configuration file
--- v004:
--- bugfix:
---		- import eagle bom
--- added prefixes BAT and Q
--- added special character /
-
--- v005:
--- improved make_bom function:
---		- warning is output if no valid order source available for a part
--- improved add function:
--- 		- if a part is to be added that already exists, the part id is displayed
-
--- v006
--- bugfix: quantity written in order list fixed
-
--- v007
--- prefix ACCESSORY added. function parse_part_code does not conduct any deeper checks on those parts.
--- 
-
--- v008
--- prefix FH (for fuse holders) added. no value check is done here
-
--- v009
--- columns in withdrawal list re-ordered
--- storage place is written in withdrawal list
--- bugfix: on checkout_bom a copy of the withdrawal list is made in log directory
--- show_by_code renamed to show_by_fac_code
--- show_by_order_code supported
-
--- v010
--- facility bom file now contains manufacturer names and part codes
--- default names for order, withdrawal lists removed
--- stale order or withdrawal lists will no longer be removed on start
-
--- v011
--- prefixes: WIRE, CABLE, PLUG, RECEPTACLE, TERMINALF, TERMINALM supported
--- execption fixed that occured on checkout_bom due to limited file name lenght (in function make_filename_by_date)
-
--- v012
--- supports scaling of facility bom file
--- supports merging bom files to one
-
--- v013
--- prefix DIS (for displays) supported
--- bugfix: parts without any vendor information are now written with price 0.00 in bom
--- on error OL410, message outputs that order list can not be written due to insufficient permissions on file
--- search function improved: show_by_order_code and show_by_fac_code supports wildcards '*'
--- If a manufacturer or distributor is deleted (by changing the name to "n/a" all other information belonging to it
--- is delete also.
--- On query_bom and checkout_bom the names of order and withdrawal list are fixed. No longer passed as arguments.
--- When assigning part codes (facility, manufacturer, distributor), a warning is issued if code already used.
 
 
 with ada.text_io;				use ada.text_io;
@@ -125,7 +74,7 @@ with sm_csv;				use sm_csv;
 procedure stock_manager is
 
 
-	version			: String (1..3) := "014";
+	version			: constant string := "015";
 
 	part_count_max2			: natural;
 	empty_lines_count		: natural := 0;
@@ -149,7 +98,7 @@ procedure stock_manager is
 	eagle_bom_file			: ada.text_io.file_type;
 	bom_output_file			: ada.text_io.file_type;
 	facility_bom_file		: ada.text_io.file_type;
-	facility_bom_file_scaled: ada.text_io.file_type; -- ins v012
+	facility_bom_file_scaled: ada.text_io.file_type;
 	items_to_order_file		: ada.text_io.file_type;
 	items_to_take_file		: ada.text_io.file_type;
 	quantity_of_units		: natural := 1;
@@ -175,41 +124,29 @@ procedure stock_manager is
 	row_separator_double	: constant string (1..60) := "============================================================";
 
 	valid_letter 	: constant ada.strings.maps.character_set := ada.strings.maps.to_set( ranges =>  ( ('A','Z'),('a','z'),('0','9') ) );
-	--valid_special 	:	ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%"); -- rm v002
-	--valid_special 	:	ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%."); -- ins v002 -- rm v004
 	valid_special 	: constant ada.strings.maps.character_set := ada.strings.maps.to_set("_-+%./"); -- ins v004
 	valid_character	: constant ada.strings.maps.character_set := ada.strings.maps."or"(valid_letter,valid_special); -- compose set of valid characters
 
-	--type part_prefix_type is (R, RN, C, L, K, IC, LED, D, T, F, X, J, S); -- rm v003
-	--type part_prefix_type is (C, D, F, J, K, L, R, S, T, X, IC, RN, LED); -- ins v003 -- rm v004
-	--type part_prefix_type is (C, D, F, J, K, L, Q, R, S, T, X, IC, RN, LED, BAT); -- ins v004 -- rm v006
-	--type part_prefix_type is (C, D, F, J, K, L, Q, R, S, T, X, IC, RN, LED, BAT, ACCESSORY); -- -- ins v007 -- rm v008
 	type part_prefix_type is (C, D, F, J, K, L, Q, R, S, T, X, IC, RN, LED, BAT, ACCESSORY, 
-			FH, -- fuse holder -- ins v008
-			-- ins v011 begin
-			CABLE, -- cable -- ins v011
-			WIRE, -- wire
-			PLUG, -- plug
-			RECEPTACLE, -- receptacle
-			TERMINALF, -- terminal female
-			TERMINALM, -- terminal male
-			MODULE, -- module
-			DIS -- display -- ins v013
+			FH, 		-- fuse holder
+			CABLE, 		-- cable
+			WIRE, 		-- wire
+			PLUG, 		-- plug
+			RECEPTACLE,	-- receptacle
+			TERMINALF, 	-- terminal female
+			TERMINALM, 	-- terminal male
+			MODULE, 	-- module
+			DIS 		-- display
 			); 
-			-- ins v011 end
 	-- NOTE: adopt function verify_prefix after any change here !
 
 	type part_code_keyword_type is ( PAC_S , PAC_T , VAL , TOL , VMAX , TK ); -- DO NOT CHANGE POSITIONS OF PAC_S AND PAC_T !!!
-	type accessory_keyword_type is ( CABLE , JUMPER , CONNECTOR , HOLDER , SOCKET , SCREW , NUT , WASHER , BAG ); -- ins v007
+	type accessory_keyword_type is ( CABLE , JUMPER , CONNECTOR , HOLDER , SOCKET , SCREW , NUT , WASHER , BAG );
 
 	part_prefix_count		: constant natural := part_prefix_type'pos((part_prefix_type'last)); -- number of allowed prefixes
 	part_code_keyword_count	: constant natural := part_code_keyword_type'pos((part_code_keyword_type'last)); -- number of allowed keywords in part_code_fac
-	--valid_prefix	: part_prefix_type;
 	ifs_in_part_code_fac	: constant character := '_';
 
-	--type stock_operation_type is (default, show_by_id, show_by_code, add, edit, delete, query_bom, make_bom, checkout_bom, roll_back, log); -- rm v009
-	--type stock_operation_type is (default, show_by_id, show_by_fac_code, show_by_order_code, add, edit, delete, query_bom, make_bom, checkout_bom, roll_back, log); -- ins v009 -- rm v011
-	-- ins v012 begin
 	type stock_operation_type is (default, show_by_id, show_by_fac_code, show_by_order_code, add, edit, delete,
 			query_bom, 
 			make_bom, 
@@ -218,9 +155,8 @@ procedure stock_manager is
 			log,
 			scale_bom,
 			merge_bom,
-			show_by_manu_code -- ins v013
+			show_by_manu_code
 			); 
-	-- ins v012 end
 
 	stock_operation	: stock_operation_type := default;
 
@@ -252,19 +188,18 @@ procedure stock_manager is
 
 	-- define editable part properties
 	subtype part_property_editable_type is part_property_type range qty_delta_stock..distributor_6_price_net; -- cs: consider distributor_count_max
-	--part_property_editable 	: part_property_editable_type;
 
-	universal_string_length	: constant natural := 200; -- changed from 100 to 200 in v013
+	universal_string_length	: constant natural := 200;
 	package universal_string_type is new generic_bounded_length(universal_string_length); use universal_string_type;
 
-	customized_prefix_count_max	: constant natural := 20; -- ins v003
-	type customized_prefixes_type is array (natural range <>) of universal_string_type.bounded_string; -- ins v003
-	subtype customized_prefixes_type_sized is customized_prefixes_type (1..customized_prefix_count_max); -- ins v003
-	customized_prefixes	: customized_prefixes_type_sized; -- ins v003
-	customized_prefixes_count	: natural := 0; -- ins v003
+	customized_prefix_count_max	: constant natural := 20;
+	type customized_prefixes_type is array (natural range <>) of universal_string_type.bounded_string;
+	subtype customized_prefixes_type_sized is customized_prefixes_type (1..customized_prefix_count_max);
+	customized_prefixes	: customized_prefixes_type_sized;
+	customized_prefixes_count	: natural := 0;
 
-	facility_count_max		: constant natural := 3; -- ins v003
-	facility_count			: natural; -- ins v003
+	facility_count_max		: constant natural := 3;
+	facility_count			: natural;
 	type facility_name_type is array (natural range <>) of string (1..3);
 	subtype facility_name_type_sized is facility_name_type (1..facility_count_max);
 	facility_names	: facility_name_type_sized;
@@ -274,19 +209,14 @@ procedure stock_manager is
 	eagle_bom_csv  		: universal_string_type.bounded_string;
 	part_code_given		: universal_string_type.bounded_string;
 	stock_db_csv		: unbounded_string := to_unbounded_string("stock_db.csv");
-	-- rm v010 begin
-	--bom_file_csv		: universal_string_type.bounded_string := to_bounded_string("bom.csv");
-	--items_to_order_csv	: universal_string_type.bounded_string := to_bounded_string("order.csv");
-	--items_to_take_csv	: universal_string_type.bounded_string := to_bounded_string("take.csv");
-	-- rm v010 end
-	bom_file_csv		: universal_string_type.bounded_string; -- ins v010
-	items_to_order_csv	: universal_string_type.bounded_string; -- ins v010
-	items_to_take_csv	: universal_string_type.bounded_string; -- ins v010
+	bom_file_csv		: universal_string_type.bounded_string;
+	items_to_order_csv	: universal_string_type.bounded_string;
+	items_to_take_csv	: universal_string_type.bounded_string;
 	facility_bom_csv	: universal_string_type.bounded_string;
-	facility_bom_csv_scaled	: universal_string_type.bounded_string; -- ins v012
-	facility_bom_csv_1	: universal_string_type.bounded_string; -- ins v012
-	facility_bom_csv_2	: universal_string_type.bounded_string; -- ins v012
-	facility_bom_csv_12	: universal_string_type.bounded_string := to_bounded_string("collective_bom.csv"); -- ins v012
+	facility_bom_csv_scaled	: universal_string_type.bounded_string;
+	facility_bom_csv_1	: universal_string_type.bounded_string;
+	facility_bom_csv_2	: universal_string_type.bounded_string;
+	facility_bom_csv_12	: universal_string_type.bounded_string := to_bounded_string("collective_bom.csv");
 	columns_of_facility_bom	: natural := 7;
 
 	
@@ -350,7 +280,6 @@ procedure stock_manager is
 			project				: universal_string_type.bounded_string := to_bounded_string(not_assigned_mark);
 		end record;
 	type part_stock_array_type is array (natural range <>) of part_stock_type;
---	subtype part_stock_array_sized is part_stock_array_type (1..part_count_max);
 
 	part_id_given		: natural;
 
@@ -384,13 +313,9 @@ procedure stock_manager is
 
 	column_of_part_code_facility_in_eagle_bom	: natural;
 
-	--manufacturer_part_code_given	: universal_string_type.bounded_string; -- ins v013
-	--property_string_length	: natural := 300; -- ins v013
-	--package property_string_type is new generic_bounded_length(property_string_length); use property_string_type; -- ins v013
-	property_string_given			: universal_string_type.bounded_string; -- ins v013
+	property_string_given			: universal_string_type.bounded_string;
 ---------------------------------------------
 
-	-- ins v013 begin
 	procedure print_error_on_too_many_characters is
 	begin
 		set_output(standard_output);
@@ -398,16 +323,13 @@ procedure stock_manager is
 		put_line("ERROR : Given property string too long !");
 		put_line("        Max. count of characters is" & natural'image(universal_string_length) & " !");
 	end print_error_on_too_many_characters;
-	-- ins v013 end
 
-	-- ins v009 begin
 	procedure print_error_on_insufficient_rights
 		(file_name : string) is
 		previous_output	: Ada.Text_IO.File_Type renames current_output;
 	begin
 		new_line;
-		--put_line("ERROR : Insufficient rights to create or access file '" & file_name & "' !"); -- rm v013
-		put_line("ERROR : Insufficient rights to create, write or access file :"); -- ins v013
+		put_line("ERROR : Insufficient rights to create, write or access file :");
 		put_line("        '" & file_name & "' !"); -- ins v013
 		put_line("        Make sure file exists and access rights are correct.");
  		put_line("        Contact system administrator !");
@@ -418,14 +340,13 @@ procedure stock_manager is
 	procedure print_error_on_invalid_character
 		(part_code_fac	: string;
 		 character_pos	: natural) is
-		 previous_output	: Ada.Text_IO.File_Type renames current_output; -- ins v003
+		 previous_output	: Ada.Text_IO.File_Type renames current_output;
 	begin
-		set_output(standard_output); -- ins v003
+		set_output(standard_output);
 		new_line;
-		--put_line("ERROR : Part code '" & part_code_fac & "' contains invalid character at position" & natural'image(character_pos) & " !");
 		put_line("ERROR : Part code contains invalid character at position" & natural'image(character_pos) & " !");
 		new_line;
-		set_output(previous_output); -- ins 003
+		set_output(previous_output);
 	end print_error_on_invalid_character;
 
 
@@ -468,18 +389,15 @@ procedure stock_manager is
 		) 
 		return boolean is -- returns false if part code invalid
 		prefix_valid		: boolean := false;
-		part_is_accessory	: boolean := false; -- ins v007
+		part_is_accessory	: boolean := false;
 		char_pt				: natural;
 	begin
 		-- check for forbidden characters
-		--prog_position := "PA000"; -- rm v003
 		--put_line(standard_output,"facility part code : " & part_code_fac); 
 		for c in 1..part_code_fac'last -- check every character if it is part of set "valid_character"
 		loop
-			-- prog_position := "PA003"; -- rm v003
 			--put_line(standard_output,"character : "); put(standard_output, part_code_fac'first); new_line;
 			if not ada.strings.maps.is_in(part_code_fac(c),valid_character) then
-				-- prog_position := "PA004"; -- rm v003
 				print_error_on_invalid_character(part_code_fac,c);
 				return false;
 			end if;
@@ -496,15 +414,11 @@ procedure stock_manager is
 				if index(part_code_fac, part_prefix_type'image(part_prefix_type'val(p)) & '_') = 1 then -- if valid prefix found
 					prefix_valid := true; -- once a valid prefix found, set flag prefix_valid
 
-					-- ins v007 begin
 					if p = part_prefix_type'pos(ACCESSORY) then
-						--part_is_accessory := true; -- rm v011
 						-- CS: do some useful checks
-						exit; -- ins v011
+						exit;
 					end if;
-					-- ins v007 end
 
-					-- ins v011 begin
 					if p = part_prefix_type'pos(MODULE) then
 						-- CS: do some useful checks
 						exit;
@@ -536,12 +450,10 @@ procedure stock_manager is
 						-- CS: do some useful checks
 						exit;
 					end if;
-					-- ins v011 end
 
 					-- save position of last character of prefix ( +1 for trailing '_' )
 					char_pt	:= part_prefix_type'image(part_prefix_type'val(p))'last + 1;
 
-					-- ins v011 begin
 					-- check package keyword after prefix
 					prog_position := "PA210";
 					char_pt := char_pt + 1;
@@ -556,7 +468,6 @@ procedure stock_manager is
 						print_error_on_missing_keyword_pac(char_pt);
 						return false;
 					end if;
-					-- ins v011 end
 
 					--put_line("char_pt: " & natural'image(char_pt));
 					exit; -- no further search requird
@@ -578,25 +489,6 @@ procedure stock_manager is
 -- 				return false;
 -- 			end if;
 
-			-- check package keyword after prefix if part is non-accessory
--- rm v011 begin
--- 			if not part_is_accessory then -- ins v007
--- 				prog_position := "PA500";
--- 				char_pt := char_pt + 1;
--- 				--put_line("char_pt: " & natural'image(char_pt));
--- 				if 		index(part_code_fac, part_code_keyword_type'image(part_code_keyword_type'val(0)) & '_') = char_pt then
--- 						-- save position of last character of keyword ( +1 for trailing '_' )
--- 						char_pt	:= char_pt + part_code_keyword_type'image(part_code_keyword_type'val(0))'last + 1;
--- 				elsif	index(part_code_fac, part_code_keyword_type'image(part_code_keyword_type'val(1)) & '_') = char_pt then
--- 						-- save position of last character of keyword ( +1 for trailing '_' )
--- 						char_pt	:= char_pt + part_code_keyword_type'image(part_code_keyword_type'val(1))'last + 1;
--- 				else 	
--- 					print_error_on_missing_keyword_pac(char_pt);
--- 					return false;
--- 				end if;
--- 				--put_line("char_pt: " & natural'image(char_pt));
--- 			end if; -- ins v007
--- rm v011 end
 			-- cs: parse for valid accessories
 			-- cs: check for more keywords ?
 
@@ -618,7 +510,7 @@ procedure stock_manager is
 
 	procedure check_environment is
 		previous_input	: Ada.Text_IO.File_Type renames current_input;
-		scratch_natural : natural; -- ins v003
+		scratch_natural : natural;
 	begin
 		-- get home variable
 		prog_position := "ENV00";
@@ -732,7 +624,6 @@ procedure stock_manager is
 					loop
 						facility_names(f-1) := to_upper(sm_string_processing.get_field(line,f));
 						facility_count	:= scratch_natural-1;
-						--facility_name := to_upper(sm_string_processing.get_field(line,2,' ')); -- rm v003
 						if debug_mode = 1 then 
 							put("facilities      : " & facility_names(f-1)); new_line;
 						end if;
@@ -740,7 +631,6 @@ procedure stock_manager is
 					end loop;
 				end if;
 
-				-- ins v003 begin
 				-- get customer specific item prefixes which may exist in the eagle bom file
 				if sm_string_processing.get_field(line,1,' ') = "customer_prefixes" then 
 					prog_position := "ENV80";
@@ -755,8 +645,6 @@ procedure stock_manager is
 					end loop;
 					
 				end if;
-				-- ins v003 end
-
 
 			end loop;
 			close(conf_file);
@@ -812,8 +700,7 @@ procedure stock_manager is
 		end if;
 		
 		--put_line("arg. ct: " & natural'image(arg_ct));
-		--put(image(clock, time_zone => UTC_Time_Offset(clock)) & "    | "); -- rm v002
-		put(image(now, time_zone => UTC_Time_Offset(now)) & "    | "); -- ins v002
+		put(image(now, time_zone => UTC_Time_Offset(now)) & "    | ");
 		--put_line(stock_operation_type'image(stock_operation));
 		for a in 1..arg_ct
 		loop
@@ -824,9 +711,9 @@ procedure stock_manager is
 		prog_position := "UL100";
 		close(log_file);
 		--set_output(standard_output);
-		prog_position := "UL101"; -- ins v009
+		prog_position := "UL101";
 		set_output(previous_output);
-		prog_position := "UL102"; -- ins v009
+		prog_position := "UL102";
 	end update_log;
 
 
@@ -1093,8 +980,7 @@ procedure stock_manager is
 	begin
 		set_output(standard_output);
 		new_line;
-		--put_line("ERROR : Part ID outside range '1.." & trim(natural'image(part_count_max2),left) & "' !"); -- rm v013
-		put_line("ERROR : Part ID not in use or outside range '1.." & trim(natural'image(part_count_max2),left) & "' !"); -- ins v013
+		put_line("ERROR : Part ID not in use or outside range '1.." & trim(natural'image(part_count_max2),left) & "' !");
 		new_line;
 		raise constraint_error;
 	end print_error_on_unknown_id;
@@ -1532,27 +1418,14 @@ procedure stock_manager is
 		facility_bom_part_array			: parts_of_facility_bom_sized;
 
 		part_occured_on_stock		: natural := 0;
-		--qty_on_stock_delta_given	: integer := 0; -- rm v013
-		qty_on_stock_delta_scratch	: integer := 0; -- ins v013
+		qty_on_stock_delta_scratch	: integer := 0;
 		qty_on_stock_tmp			: natural := 0;
-		--qty_reserved_given		: integer := 0; -- rm v013
-		qty_reserved_scratch		: integer := 0; -- ins v013
+		qty_reserved_scratch		: integer := 0;
 		qty_reserved_tmp 			: natural := 0;
 		qty_scratch					: natural := 0;
---		part_code_fac_given2					: universal_string_type.bounded_string; -- rm v013
-		--manufacturer_name_given					: universal_string_type.bounded_string; -- rm v013
-		--manufacturer_part_code_given			: universal_string_type.bounded_string; -- rm v013
 		manufacturer_status_production_scratch 	: status_production_type;
---		manufacturer_datasheet_scratch			: g_type.bounded_string; -- ins v013
---		distributor_name_given					: universal_string_type.bounded_string; -- rm v013
---		distributor_order_code_given			: universal_string_type.bounded_string;
---		distributor_qty_min_given				: natural; -- rm v013
-		distributor_qty_min_scratch				: natural; -- ins v013
---		distributor_price_net_given				: money_positive; -- rm v013
-		distributor_price_net_scratch			: money_positive; -- ins v013
---		storage_place_given						: universal_string_type.bounded_string; -- rm v013
---		remarks_given							: universal_string_type.bounded_string;
---		project_given							: universal_string_type.bounded_string;
+		distributor_qty_min_scratch				: natural;
+		distributor_price_net_scratch			: money_positive;
 		part_ct_proj							: natural := 0;
 		part_ct_proj_smd						: natural := 0;
 		part_ct_proj_tht						: natural := 0;
@@ -1593,7 +1466,6 @@ procedure stock_manager is
 					line:=get_line;
 					if part_section_entered then
 						if sm_csv.get_field(line,6) = "YES" then -- part must be registerd -- insist on capital letters
-							--if sm_csv.get_field(line,9) /= "" then -- if field is empty, no part code present, abort -- rm v003
 
 							-- now, for checking the facility part code, the column detetected earlier is to be used
 							if sm_csv.get_field(line,column_of_part_code_facility_in_eagle_bom) /= "" then -- if field is empty, no part code present, abort -- ins v003
@@ -1633,9 +1505,7 @@ procedure stock_manager is
 						if sm_csv.get_field(line,1) = "Part" and sm_csv.get_field(line,2) = "Value" and
 							sm_csv.get_field(line,3) = "Device" and sm_csv.get_field(line,4) = "Package" and
 							sm_csv.get_field(line,5) = "Description" and sm_csv.get_field(line,6) = "BOM" and
-							--sm_csv.get_field(line,7) = "COMMISSIONED" and sm_csv.get_field(line,8) = "FUNCTION" and -- rm v003
 
-							-- ins v003 begin
 							-- the column that holds the facility part code must be detected
 							sm_csv.get_field(line,7) = "COMMISSIONED" and sm_csv.get_field(line,8) = "FUNCTION" then
 								find_part_code_column:
@@ -1666,11 +1536,7 @@ procedure stock_manager is
 										end if;
 									end loop;
 								end loop find_part_code_column;
-							-- ins v003 end
 
-							--sm_csv.get_field(line,9) = "PART_CODE_" & facility_name then -- rm v003
-							-- set part_section_entered flag
-							--part_section_entered := true; -- rm v003
 						end if;
 					end if;
 				end loop;
@@ -1728,8 +1594,7 @@ procedure stock_manager is
 							--put_line(standard_output,"part_id : " & natural'image(part_stock_array(p).part_id));
 							parts_to_order_array(position_pt).part_id := part_stock_array(p).part_id; 
 							parts_to_order_array(position_pt).part_code_fac := part_stock_array(p).part_code_fac;
-							--parts_to_order_array(position_pt).quantity := facility_bom_part_array(f).qty; -- rm v006
-							parts_to_order_array(position_pt).quantity := facility_bom_part_array(f).qty - part_stock_array(p).qty_available; -- ins v006
+							parts_to_order_array(position_pt).quantity := facility_bom_part_array(f).qty - part_stock_array(p).qty_available;
 	
 							-- collect distributor names and order codes
 							prog_position := "OL200";
@@ -1870,32 +1735,25 @@ procedure stock_manager is
 			put_line(row_separator);
 			put_field(text => "BOARD:"); put_field(text => base_name(to_string(facility_bom_csv))); put_lf;
 			put_field(text => "NUMBER OF UNITS: "); put_field(text => natural'image(quantity_of_units)); put_lf(count => 2);
-			--put_line("DATE: " & image(clock, time_zone => UTC_Time_Offset(clock)) & " (YYYY:MM:DD HH:MM:SS)");
-			--put_line("DATE: " & date_now & " (YYYY:MM:DD HH:MM:SS)"); -- rm v010
 			put_field(text => "DATE: " & date_now); put_field(text => "(YYYY:MM:DD HH:MM:SS)"); put_lf; -- ins v010
 			put_line(row_separator);
-			--put_field(text => "POS."); put_field(text => "PART_ID"); put_field(text => "PART_CODE_" & facility_names(1)); put_field(text => "QTY"); -- rm v009
 			put_field(text => "POS."); put_field(text => "STORAGE_PLACE"); put_field(text => "PART_ID");  put_field(text => "QTY"); put_field(text => "PART_CODE_" & facility_names(1)); -- ins v009
 			put_lf(count => 2);
 			for t in 1..position_pt
 			loop
 				put_field(text => natural'image(t)); -- write position
 
-				-- ins v009 begin
 				for p in 1..part_count_max2 -- loop through part_stock_array to find storage_place of part
 				loop
 					if facility_bom_part_array(t).part_id = part_stock_array(p).part_id then -- on part_id match
-						put_field(text => to_string(part_stock_array(p).storage_place)); -- ins v009
+						put_field(text => to_string(part_stock_array(p).storage_place));
 						exit; -- no need for further part search
 					end if;
 				end loop;
-				-- ins v009 end
 
-				put_field(text => natural'image(facility_bom_part_array(t).part_id)); -- ins v009
-				put_field(text => natural'image(facility_bom_part_array(t).qty)); -- ins v009
-				--put_field(text => natural'image(facility_bom_part_array(t).part_id)); -- rm v009
+				put_field(text => natural'image(facility_bom_part_array(t).part_id));
+				put_field(text => natural'image(facility_bom_part_array(t).qty));
 				put_field(text => to_string(facility_bom_part_array(t).part_code));
-				--put_field(text => natural'image(facility_bom_part_array(t).qty)); -- rm v009
 				put_lf;
 			end loop;
 			put_field(text => "END OF LIST"); put_lf;
@@ -2037,8 +1895,8 @@ procedure stock_manager is
 			price_total_max			: money_positive := 0.00;
 			min_start_value_set 	: boolean := false;
 			max_start_value_set 	: boolean := false;
-			customized_prefix_length	: natural; -- ins v003
-			valid_source_found		: boolean := false; -- ins v005
+			customized_prefix_length	: natural;
+			valid_source_found		: boolean := false;
 
 			function check_value	-- returns true if ok, raises constraint_error on occurence of forbidden character
 				( 	value_test	: string) 
@@ -2059,10 +1917,9 @@ procedure stock_manager is
 
 			function verify_prefix
 				-- test if prefix is among allowed prefixes. returns given prefix if positive
-				--return boolean is -- rm v003
-				return string is -- ins v003
+				return string is
 				prefix_valid	: boolean := false;
-				prefix_to_return	: universal_string_type.bounded_string := to_bounded_string(""); -- defaults empty, --ins v003
+				prefix_to_return	: universal_string_type.bounded_string := to_bounded_string(""); -- defaults empty
 			begin 
 				-- test one-character standard prefixes C, D, F, J, K, L, Q, R, S, T, X
 				if is_digit(to_string(project_part(ct).part)(2)) then -- test if 2nd character is a digit
@@ -2073,53 +1930,39 @@ procedure stock_manager is
 						if to_string(project_part(ct).part)(1) = part_prefix_type'image(part_prefix_type'val(p))(1) then
 							prefix_valid := true;
 							-- save prefix_to_return
-							prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,1) ); -- ins v003
+							prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,1) );
 							exit;
 						end if;
 					end loop;
-					--	when 'R' | 'C' | 'L' | 'F' | 'T' | 'D' | 'X' | 'J' | 'S' | 'K' => prefix_valid := true; -- rm v003
-					--when others => null;	-- rm v003
-					--end case;	-- rm v003
 				end if;
 
 				-- test two-character standard prefixes IC, RN
-				--if index(project_part(ct).part,"IC") = 1 or index(project_part(ct).part,"RN") = 1 then -- rm v003
--- 				if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(10)) ) = 1 -- this is an IC -- ins v003 -- rm v004
--- 				or index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(11)) ) = 1 then -- this is an RN -- ins v003 -- rm v004
-				--if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(11)) ) = 1 -- this is an IC -- ins v004 -- rm v011
-				if index(project_part(ct).part, part_prefix_type'image(IC)) = 1 -- this is an IC -- ins v011
-				--or index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(12)) ) = 1 then -- this is an RN -- ins v004 -- rm v011
-				or index(project_part(ct).part, part_prefix_type'image(RN)) = 1 then -- this is an RN -- ins v011
+				if index(project_part(ct).part, part_prefix_type'image(IC)) = 1 -- this is an IC
+				or index(project_part(ct).part, part_prefix_type'image(RN)) = 1 then -- this is an RN
 					if is_digit(to_string(project_part(ct).part)(3)) then -- test if 3th character is a digit (i.e. IC3 or RN4)
 						prefix_valid := true;
 						-- save prefix_to_return
-						prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,2) ); -- ins v003
+						prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,2) );
 					end if;
 				end if;
 
 				-- test three-character standard prefixes LED
-				--if index(project_part(ct).part,"LED") = 1 then -- rm v003
-				--if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(12)) ) = 1 then -- this is an LED -- ins v003 -- rm v004
-				--if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(13)) ) = 1 -- this is an LED -- ins v004 -- rm v011
-				if index(project_part(ct).part, part_prefix_type'image(LED)) = 1 -- this is an LED -- ins v011
-				or index(project_part(ct).part, part_prefix_type'image(DIS)) = 1 -- this is a display -- ins v013
-				--or index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(14)) ) = 1 then -- this is a BAT -- ins v004 -- rm v011
-				or index(project_part(ct).part, part_prefix_type'image(BAT)) = 1 then -- this is a BAT -- ins v011
+				if index(project_part(ct).part, part_prefix_type'image(LED)) = 1 -- this is an LED
+				or index(project_part(ct).part, part_prefix_type'image(DIS)) = 1 -- this is a display
+				or index(project_part(ct).part, part_prefix_type'image(BAT)) = 1 then -- this is a BAT
 					if is_digit(to_string(project_part(ct).part)(4)) then -- test if 4th character is a digit (i.e. LED3 or DIS7)
 						prefix_valid := true;
 						-- save prefix_to_return
-						prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,3) ); -- ins v003
+						prefix_to_return := to_bounded_string( slice(project_part(ct).part,1,3) );
 					end if;
 				end if;
 
-				-- ins v007 begin
 				--if index(project_part(ct).part, part_prefix_type'image(part_prefix_type'val(15)) ) = 1 then -- this is an accessory part
 				if index(project_part(ct).part, part_prefix_type'image(ACCESSORY) ) = 1 then -- this is an accessory part
 					prefix_valid := true;
 					-- save prefix_to_return
 					prefix_to_return := to_bounded_string( part_prefix_type'image(ACCESSORY) );
 				end if;
-				-- ins v007 end
 
 				-- ins v008 begin
 				if index(project_part(ct).part, part_prefix_type'image(FH) ) = 1 then -- this is a fuse holder
@@ -2127,9 +1970,7 @@ procedure stock_manager is
 					-- save prefix_to_return
 					prefix_to_return := to_bounded_string( part_prefix_type'image(FH) );
 				end if;
-				-- ins v008 end
 
-				-- ins v011 begin
 				if index(project_part(ct).part, part_prefix_type'image(MODULE) ) = 1 then
 					prefix_valid := true;
 					-- save prefix_to_return
@@ -2171,9 +2012,7 @@ procedure stock_manager is
 					-- save prefix_to_return
 					prefix_to_return := to_bounded_string( part_prefix_type'image(TERMINALM) );
 				end if;
-				-- ins v011 end
 
-				-- ins v003 begin
 				-- test custom prefixes as specified in configuration file
 				-- loop through custom prefixes
 				for cp in 1..customized_prefixes_count 
@@ -2184,22 +2023,18 @@ procedure stock_manager is
 						if is_digit(to_string(project_part(ct).part)(customized_prefix_length+1)) then 
 							prefix_valid := true;
 							-- save prefix_to_return
-							prefix_to_return := customized_prefixes(cp); -- ins v003
+							prefix_to_return := customized_prefixes(cp);
 							exit;
 						end if;
 					end if;
 				end loop;
-				-- ins v003 end
 
 				-- after all those checks, if prefix is still invalid
 				if prefix_valid = false then
 					new_line(standard_output);					
 					put_line(standard_output,"ERROR : Part " & to_string(project_part(ct).part) & " has invalid prefix !");	
-					--put_line(standard_output,"        Prefixes allowed are: R, RN, C, L, F, T, D, X, J, S, IC, K"); -- rm v003
-					put(standard_output,"        Standard prefixes are: "); -- ins v003
-					--new_line(standard_output); -- rm v003
+					put(standard_output,"        Standard prefixes are: ");
 
-					-- ins v003 begin
 					-- print standard prefixes
 					for p in 0..part_prefix_count
 					loop
@@ -2210,7 +2045,7 @@ procedure stock_manager is
 
 					-- print customer prefixes if specified
 					if customized_prefixes_count > 0 then
-						put(standard_output,"        Customer prefixes are: "); -- ins v003
+						put(standard_output,"        Customer prefixes are: ");
 						for cp in 1..customized_prefixes_count
 						loop
 							put(standard_output,to_string(customized_prefixes(cp)));
@@ -2219,17 +2054,14 @@ procedure stock_manager is
 						new_line(standard_output); 
 					end if;
 					new_line(standard_output); 
-					-- ins v003 end
 
-					--return false; -- rm v003
 					-- prefix_to_return is still empty
-					return to_string(prefix_to_return); -- ins v003
+					return to_string(prefix_to_return);
 				end if;
 
 				-- if prefix is valid
-				--return true; -- rm v003
 				-- prefix_to_return holds valid prefix
-				return to_string(prefix_to_return); -- rm v003
+				return to_string(prefix_to_return);
 			end verify_prefix;
 
 
@@ -2312,14 +2144,13 @@ procedure stock_manager is
 							project_part(ct).commissioned	:= to_bounded_string(check_date(sm_csv.get_field(line,7)));
 							project_part(ct).funct	 		:= to_bounded_string(sm_csv.get_field(line,8,';'));
 
-							-- ins v003 begin
 							-- make sure, the facility part code is valid
 							--prog_position := "RB210";
 							--put_line(standard_output,"part_code_fac : " & sm_csv.get_field(line,9));
 							prog_position := "RB211";
 							if parse_part_code(trim(sm_csv.get_field(line,column_of_part_code_facility_in_eagle_bom),both)) = false then
 								put_line(standard_output,"ERROR : Part " & to_string(project_part(ct).part) & " has forbidden characters in its facility part code !");
-								new_line(standard_output); -- ins v003
+								new_line(standard_output);
 								--put_line(standard_output,"        Found value '" & to_string(project_part(ct).value) & "'");
 								prog_position := "RB212";
 								raise constraint_error;
@@ -2328,28 +2159,16 @@ procedure stock_manager is
 								project_part(ct).part_code_fac	:= to_bounded_string(trim(sm_csv.get_field(line,column_of_part_code_facility_in_eagle_bom),both));
 							end if;
 							prog_position := "RB214";
-							-- ins v003 end
-
-							--project_part(ct).part_code_fac	:= to_bounded_string(trim(sm_csv.get_field(line,9),both)); -- rm v003
 
 							-- verify if prefix is valid
-							prog_position := "RB300"; -- rm v003
-							--if verify_prefix = false then -- rm v003
-							if verify_prefix = "" then -- ins v003
+							prog_position := "RB300";
+							if verify_prefix = "" then
 								raise constraint_error;
 							end if;
 
 							-- verify packages, values, function field of current part being processed
 							prog_position := "RB400";
 							-- if part prefix is R,C,L,F,T with a number following it (i.e. R505, C409)
-							--if is_digit(to_string(project_part(ct).part)(2)) then -- test if 2nd character is a digit -- rm v003
-							--	case to_string(project_part(ct).part)(1) is -- test if 1st character is a prefix -- rm v003
-
-							-- rm v011 begin
-							--if verify_prefix = "R" or verify_prefix = "C" or verify_prefix = "L" or verify_prefix = "F" or -- ins v003
-							--verify_prefix = "D" or verify_prefix = "Q" or -- ins v004
-							--verify_prefix = "T" or verify_prefix = "K" or verify_prefix = "RN" then -- ins v003
-							-- rm v011 end
 
 							-- ins v011 begin
 							if verify_prefix = part_prefix_type'image(R) 
@@ -2362,9 +2181,7 @@ procedure stock_manager is
 							or verify_prefix = part_prefix_type'image(K)
 							or verify_prefix = part_prefix_type'image(RN)
 							then
-							-- ins v011 end
 
-								--when 'R' | 'C' | 'L' | 'F' | 'T' | 'K' => -- rm v003
 								-- make sure part_code _VAL_ field matches actual value field
 									if verify_value_fields = false then
 										raise constraint_error;
@@ -2376,10 +2193,7 @@ procedure stock_manager is
 
 							-- if part prefix is IC
 							prog_position := "RB500";
-							--if index(project_part(ct).part,"IC") = 1 then -- rm v003
-							--	if is_digit(to_string(project_part(ct).part)(3)) then -- test if 3rd character is a digit (i.e. IC45) -- rm v003
-							-- elsif verify_prefix = "IC" then -- ins v003 -- rm v011
-							elsif verify_prefix = part_prefix_type'image(IC) then -- ins v011
+							elsif verify_prefix = part_prefix_type'image(IC) then
 								-- make sure part_code _VAL_ field matches actual value field
 								if verify_value_fields = false then
 									raise constraint_error;
@@ -2388,16 +2202,11 @@ procedure stock_manager is
 								if verify_package_fields = false then
 									raise constraint_error;
 								end if;
-								--end if; -- rm v003
-
 
 							-- if part prefix is LED
 							prog_position := "RB600";
-							--if index(project_part(ct).part,"LED") = 1 then -- rm v003
-							--	if is_digit(to_string(project_part(ct).part)(4)) then -- test if 4th character is a digit (i.e. LED3) -- rm v003
-							--elsif verify_prefix = "LED" then -- ins v003 -- rm v011
-							elsif verify_prefix = part_prefix_type'image(LED) -- ins v011
-							or  verify_prefix = part_prefix_type'image(DIS) then -- ins v013
+							elsif verify_prefix = part_prefix_type'image(LED)
+							or  verify_prefix = part_prefix_type'image(DIS) then
 								-- make sure part_code _VAL_ field matches actual value field
 								if verify_value_fields = false then
 									raise constraint_error;
@@ -2410,50 +2219,20 @@ procedure stock_manager is
 								if verify_function_fields = false then -- if no function assigned
 									raise constraint_error;										
 								end if;
-								--end if; -- rm v003
-
-
--- rm v003 begin
--- 							-- if part prefix is RN
--- 							prog_position := "RB700";
--- 							if index(project_part(ct).part,"RN") = 1 then
--- 								if is_digit(to_string(project_part(ct).part)(3)) then -- test if 3rd character is a digit (i.e. RN405)
--- 									-- make sure part_code _VAL_ field matches actual value field
--- 									if verify_value_fields = false then
--- 										raise constraint_error;
--- 									end if;
--- 									-- make sure part_code _PAC_ field matches actual package field
--- 									if verify_package_fields = false then
--- 										raise constraint_error;
--- 									end if;
--- 								end if;
--- 							end if;
--- rm v003 end
 
 							-- if part prefix is X,J,S with a number following it (i.e. X505, S409)
 							prog_position := "RB800";
-							--if is_digit(to_string(project_part(ct).part)(2)) then -- test if 2nd character is a digit -- rm v003
-							--elsif verify_prefix = "X" or verify_prefix = "J" or verify_prefix = "S" then -- ins v003 -- rm v011
 
-							-- ins v011 begin
 							elsif verify_prefix = part_prefix_type'image(X)
 							or verify_prefix = part_prefix_type'image(J)
 							or verify_prefix = part_prefix_type'image(S)
 							then
-							-- ins v011 end
 
-							--	prog_position := "RB830"; -- rm v003
-							--	case to_string(project_part(ct).part)(1) is -- test if 1st character is a prefix -- rm v003
-							--		when 'X' | 'J' | 'S' => -- rm v003
-							--			prog_position := "RB840"; -- rm v003
 								if verify_function_fields = false then -- if no function assigned to X,J,S
 									prog_position := "RB850";
 									raise constraint_error;										
 								end if;
-							--		when others => null; -- rm v003
-							--	end case; -- rm v003
 
-							-- ins v011 begin
 							prog_position := "RBA00";
 							elsif verify_prefix = part_prefix_type'image(RECEPTACLE)
 							or verify_prefix = part_prefix_type'image(PLUG)
@@ -2466,9 +2245,6 @@ procedure stock_manager is
 								prog_position := "RBA10";
 								null;
 							
-							-- ins v011 end
-
-							-- ins v003 begin
 							-- for all other prefixes (incl. customer specific prefixes) applies:
 							-- check function field in any case
 							prog_position := "RB810";
@@ -2479,13 +2255,12 @@ procedure stock_manager is
 									raise constraint_error;										
 								end if;
 							end if;
-							-- ins v003 end
 
 						end if; -- if "yes" found
 					end if; -- if part section entered
 
 					prog_position := "RB890";
-					if sm_csv.get_field(line,1,';') = "Part" then -- set part_section_entered flag upon passing the "Part" field -- ins v003
+					if sm_csv.get_field(line,1,';') = "Part" then -- set part_section_entered flag upon passing the "Part" field
 						prog_position := "RB900";
 						part_section_entered := true;
 					end if;
@@ -2501,8 +2276,7 @@ procedure stock_manager is
 		put_field(text => "BILL OF MATERIAL"); put_lf;
 		put_field(text => "------------------------------"); put_lf;
 		put_field(text => "board:"); put_field(text => base_name(to_string(eagle_bom_csv))); put_lf(count => 2);
-		--put_field(text => "created by STOCK MANAGER"); put_field(text => "V" & version); put_lf; -- rm v010
-		put_field(text => "created by"); put_field(text => "STOCK MANAGER"); put_field(text => "V" & version); put_lf; -- ins v010
+		put_field(text => "created by"); put_field(text => "STOCK MANAGER"); put_field(text => "V" & version); put_lf;
 		put_field(text => "contact:"); put_field(text => "www.blunk-electronic.de"); put_lf;
 		put_field(text => "date:"); put_field(text => date_now);
 		put_field(text => "(YYYY-MM-DD HH:MM:SS)"); put_lf(count => 2);
@@ -2516,12 +2290,10 @@ procedure stock_manager is
 		put_field(text => "PART_CODE_" & facility_names(1));
 		put_field(text => "PART_ID");
 	
-		-- ins v010 begin
 		for m in 1..manufacturer_count_max
 		loop
 			put_field(text => "MANUFACTURER / PART_CODE");
 		end loop;
-		-- ins v010 end
 
 		put_field(text => "PRICE_NET_MIN");
 		put_field(text => "PRICE_NET_MAX");
@@ -2577,31 +2349,29 @@ procedure stock_manager is
 
 				-- search for part in part_stock_array and write its part ID, price_net_min, price_net_max
 				prog_position := "WB200";
-				part_occured_in_sdb := false; -- ins v003
+				part_occured_in_sdb := false;
 				for p in 1..part_count_max2
 				loop
 					-- if part found in stock data base, put its part_id in column E
 					if part_stock_array(p).part_code_fac = project_part(id_master).part_code_fac then
 						put_field(text => trim(natural'image(part_stock_array(p).part_id),left));
 
-						-- ins v010 begin
 						-- write manufacturer part codes
 						for m in 1..manufacturer_count_max
 						loop
 							put_field(text => to_string(part_stock_array(p).manufacturers(m).name & " / " &
 							part_stock_array(p).manufacturers(m).part_code));
 						end loop;
-						-- ins v010 end
 
 						-- write min/max price of part in column F/G
 						--price_net_min := minimum(dist_max => distributor_count_max, part_id => part_stock_array(p).part_id);
 						min_start_value_set := false; -- reset flag that initiates reading the start value
 						max_start_value_set := false; -- reset flag that initiates reading the start value
-						valid_source_found := false; -- ins v005
+						valid_source_found := false;
 						for d in 1..distributor_count_max
 						loop
 							if to_string(part_stock_array(p).distributors(d).name) /= not_assigned_mark then -- make sure distr. is active
-								valid_source_found := true; -- if at least one distributor set -- ins v005
+								valid_source_found := true; -- if at least one distributor set
 
 								-- check if price is zero and print a warning message
 								if part_stock_array(p).distributors(d).price_net = 0.00 then
@@ -2647,17 +2417,15 @@ procedure stock_manager is
 
 						end loop;
 
-						-- ins v005 begin
 						if not valid_source_found then
 							print_warning_on_no_part_source
 								(
 								part_id => part_stock_array(p).part_id,
 								part_code => to_string(part_stock_array(p).part_code_fac)
 								);
-							price_net_min := 0.00; -- ins v013
-							price_net_max := 0.00; -- ins v013
+							price_net_min := 0.00;
+							price_net_max := 0.00;
 						end if;
-						-- ins v005 end
 
 						put_field(text => money_positive'image(price_net_min * quantity));
 						price_total_min := price_total_min + (price_net_min * quantity);
@@ -2696,8 +2464,7 @@ procedure stock_manager is
 							put(",");
 						end loop;
 						put(" ...");
-					--end if; -- rm v004
-					-- ins v004 begin
+
 					else -- otherwise put affected parts one by one
 						for psv in 1..sm_csv.get_field_count(parts_of_same_value,',') -- process as many items as affected
 						loop
@@ -2707,7 +2474,6 @@ procedure stock_manager is
 							end if;
 						end loop;
 					end if;
-					-- ins v004 end
 
 					--put_line("parts affected  : " & to_string(parts_of_same_value));
 					new_line;
@@ -2721,8 +2487,7 @@ procedure stock_manager is
 		end loop;
 
 		-- write facility bom summary
-		--for i in 1..columns_of_facility_bom -- rm v010
-		for i in 1..columns_of_facility_bom + manufacturer_count_max -- ins v010
+		for i in 1..columns_of_facility_bom + manufacturer_count_max
 		loop
 			put_field(text => sm_csv.row_separator_1);
 		end loop;
@@ -2733,13 +2498,11 @@ procedure stock_manager is
 			put_field;
 		end loop;
 
-		-- ins v010 begin
 		-- insert as many empty fields as manufactuer_count_max
 		for m in 1..manufacturer_count_max
 		loop
 			put_field;
 		end loop;
-		-- ins v010 end
 
 		put_field(text => money_positive'image(price_total_min));
 		put_field(text => money_positive'image(price_total_max)); 
@@ -2981,8 +2744,7 @@ procedure stock_manager is
 			prog_position := "MS210";
 			for i in 1..part_count_max2 loop
 				--if part_code_given = part_stock_array(i).part_code_fac then
-				--if ada.strings.fixed.count(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) > 0 then -- rm v013
-				if search_pattern_in_text(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) then -- ins v013
+				if search_pattern_in_text(to_string(part_stock_array(i).part_code_fac), to_string(part_code_given)) then
 					prog_position := "MS220";
 					part_occured_on_stock := part_occured_on_stock + 1;
 					show_part_properties(i);
@@ -2994,19 +2756,15 @@ procedure stock_manager is
 			if part_occured_on_stock = 0 then print_error_on_unknown_part; end if;
 		end if;
 
-		-- ins v009 begin
 		prog_position := "MS900";
 		if stock_operation = show_by_order_code then
 			set_output(standard_output);
 			if read_stock_data_base then null;
 			end if;
 			prog_position := "MS910";
-			--distributor_order_code_given := to_bounded_string(argument(arg_pt+1)); -- rm v013
 			for i in 1..part_count_max2 loop
 				for d in 1..distributor_count_max loop
-					--if ada.strings.fixed.count(to_string(part_stock_array(i).distributors(d).order_code), to_string(distributor_order_code_given)) > 0 then -- rm v013
-					if search_pattern_in_text(to_string(part_stock_array(i).distributors(d).order_code), to_string(property_string_given)) then -- ins v013
-					--if search_pattern_in_text(to_string(part_stock_array(i).distributors(d).order_code), "*90909") then -- ins v013
+					if search_pattern_in_text(to_string(part_stock_array(i).distributors(d).order_code), to_string(property_string_given)) then
 						prog_position := "MS920";
 						part_occured_on_stock := part_occured_on_stock + 1;
 						show_part_properties(i);
@@ -3018,9 +2776,8 @@ procedure stock_manager is
 			if part_occured_on_stock > 1 then print_number_of_occurences(part_occured_on_stock); end if;
 			if part_occured_on_stock = 0 then print_error_on_unknown_part; end if;
 		end if;
-		-- ins v009 end 
 
-		-- ins v013 begin
+
 		prog_position := "MS90A";
 		if stock_operation = show_by_manu_code then
 			set_output(standard_output);
@@ -3030,8 +2787,7 @@ procedure stock_manager is
 			--manufacturer_part_code_given := to_bounded_string(argument(arg_pt+1));
 			for i in 1..part_count_max2 loop
 				for m in 1..manufacturer_count_max loop
-					--if search_pattern_in_text(to_string(part_stock_array(i).manufacturers(m).part_code), to_string(manufacturer_part_code_given)) then -- rm v013
-					if search_pattern_in_text(to_string(part_stock_array(i).manufacturers(m).part_code), to_string(property_string_given)) then -- ins v013
+					if search_pattern_in_text(to_string(part_stock_array(i).manufacturers(m).part_code), to_string(property_string_given)) then
 						prog_position := "MS94A";
 						part_occured_on_stock := part_occured_on_stock + 1;
 						show_part_properties(i);
@@ -3062,16 +2818,12 @@ procedure stock_manager is
 						prog_position := "MS315";
 						put_line("part code old   : " & to_string(part_stock_array(i).part_code_fac));
 						prog_position := "MS317";
-						--part_code_fac_given2 := to_bounded_string(argument(arg_pt+3)); -- rm v013
-						--put_line("part code new   : " & to_string(part_code_fac_given2)); -- rm v013
-						put_line("part code new   : " & to_string(property_string_given)); -- ins v013
+						put_line("part code new   : " & to_string(property_string_given));
 						prog_position := "MS319";
-						--if parse_part_code(to_string(part_code_fac_given2),1) = false then -- rm v013
-						if parse_part_code(to_string(property_string_given),1) = false then -- ins v013
+						if parse_part_code(to_string(property_string_given),1) = false then
 							raise constraint_error;
 						end if;
 		
-						-- ins v013 begin
 						-- make sure the given part code does not exist already
 						prog_position := "MS31B";
 						for k in 1..part_count_max2 loop
@@ -3082,13 +2834,12 @@ procedure stock_manager is
 								raise constraint_error;
 							end if;
 						end loop;
-						-- ins v013 end
 
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
-						--part_stock_array(i).part_code_fac := part_code_fac_given2; -- rm v013
-						part_stock_array(i).part_code_fac := property_string_given; -- ins v013
+
+						part_stock_array(i).part_code_fac := property_string_given;
 						--part_stock_array(i).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 						part_stock_array(i).date_edited := date_now;
 						exit;
@@ -3096,23 +2847,18 @@ procedure stock_manager is
 
 					if part_property = qty_delta_stock then
 						prog_position := "MS320";
-						--qty_on_stock_delta_given := integer'value(argument(arg_pt+3)); -- rm v013
-						qty_on_stock_delta_scratch := integer'value(to_string(property_string_given)); -- ins v013
+						qty_on_stock_delta_scratch := integer'value(to_string(property_string_given));
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
-						put_line("storage place   : " & to_string(part_stock_array(i).storage_place)); -- ins v009
+						put_line("storage place   : " & to_string(part_stock_array(i).storage_place));
 						put_line("qty reserved    :" & natural'image(part_stock_array(i).qty_reserved));
 						put_line("qty on stock old:" & natural'image(part_stock_array(i).qty_on_stock));
-						--if qty_on_stock_delta_given < 0 then -- rm v013
-						if qty_on_stock_delta_scratch < 0 then -- ins v013
-							--put_line("qty stock delta : " & trim(integer'image(qty_on_stock_delta_given),left)); -- rm v013
-							put_line("qty stock delta : " & trim(integer'image(qty_on_stock_delta_scratch),left)); -- ins v013
+						if qty_on_stock_delta_scratch < 0 then 
+							put_line("qty stock delta : " & trim(integer'image(qty_on_stock_delta_scratch),left));
 						else
-							--put_line("qty stock delta : +" & trim(integer'image(qty_on_stock_delta_given),left)); -- rm v013
-							put_line("qty stock delta : +" & trim(integer'image(qty_on_stock_delta_scratch),left)); -- ins v013
+							put_line("qty stock delta : +" & trim(integer'image(qty_on_stock_delta_scratch),left));
 						end if;
 						prog_position := "MS322";
-						--qty_on_stock_tmp := part_stock_array(i).qty_on_stock + qty_on_stock_delta_given; -- rm v013
-						qty_on_stock_tmp := part_stock_array(i).qty_on_stock + qty_on_stock_delta_scratch; -- ins v013
+						qty_on_stock_tmp := part_stock_array(i).qty_on_stock + qty_on_stock_delta_scratch;
 						put_line("qty on stock new:" & natural'image(qty_on_stock_tmp));
 
 						prog_position := "MS321"; -- here we test whether more parts are taken from stock than reserved
@@ -3132,41 +2878,35 @@ procedure stock_manager is
 
 					if part_property = qty_delta_reserved then
 						prog_position := "MS330";
-						--qty_reserved_given := integer'value(argument(arg_pt+3)); -- rm v013
-						qty_reserved_scratch := integer'value(to_string(property_string_given)); -- ins v013
+						qty_reserved_scratch := integer'value(to_string(property_string_given));
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
-						put_line("storage place   : " & to_string(part_stock_array(i).storage_place)); -- ins v009
+						put_line("storage place   : " & to_string(part_stock_array(i).storage_place));
 						put_line("qty on stock    :" & natural'image(part_stock_array(i).qty_on_stock));
 						put_line("qty reserved old:" & natural'image(part_stock_array(i).qty_reserved));
-						--if qty_reserved_given < 0 then -- rm v013
-						if qty_reserved_scratch < 0 then -- ins v013
-							--put_line("qty rsvd. delta : " & trim(integer'image(qty_reserved_given),left)); -- rm v013
-							put_line("qty rsvd. delta : " & trim(integer'image(qty_reserved_scratch),left)); -- ins v013
+						if qty_reserved_scratch < 0 then
+							put_line("qty rsvd. delta : " & trim(integer'image(qty_reserved_scratch),left));
 						else
-							--put_line("qty rsvd. delta : +" & trim(integer'image(qty_reserved_given),left)); -- rm v013
-							put_line("qty rsvd. delta : +" & trim(integer'image(qty_reserved_scratch),left)); -- ins v013
+							put_line("qty rsvd. delta : +" & trim(integer'image(qty_reserved_scratch),left));
 						end if;
 						prog_position := "MS332";
-						--if part_stock_array(i).qty_reserved + qty_reserved_given < 0 then  -- if qty_reserved already zero -- rm v013
-						if part_stock_array(i).qty_reserved + qty_reserved_scratch < 0 then  -- if qty_reserved already zero -- ins v013
+						if part_stock_array(i).qty_reserved + qty_reserved_scratch < 0 then  -- if qty_reserved already zero
 							part_stock_array(i).qty_reserved := 0; -- set the lower limit of reservations to zero
 							new_line;
 							--put_line("INFO : Number of reservations can not be less than zero.");
 							put_line("INFO : Number of reservations is down to zero.");
 							new_line;
 						else	-- otherwise compute qty_reserved by
-							--qty_reserved_tmp := part_stock_array(i).qty_reserved + qty_reserved_given; -- rm v013
-							qty_reserved_tmp := part_stock_array(i).qty_reserved + qty_reserved_scratch; -- ins v013
+							qty_reserved_tmp := part_stock_array(i).qty_reserved + qty_reserved_scratch;
 						end if;
 						put_line("qty reserved new:" & natural'image(qty_reserved_tmp));
 						prog_position := "MS334";
-						-- ins v013 begin
+
 						if part_stock_array(i).qty_on_stock < qty_reserved_tmp then
 							new_line;
 							put_line("ERROR : You can not reserve more items than available on stock !");
 							raise constraint_error;
 						end if;
-						-- ins v013 end
+
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
@@ -3182,20 +2922,16 @@ procedure stock_manager is
 						prog_position := "MS34X";
 						if part_property = part_property_type'value("manufacturer_" & trim(natural'image(m),left) & "_name") then
 							prog_position := "MS340";
-							--manufacturer_name_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
-							--manufacturer_name_given := property_string_given; -- ins v013
 							put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 							put_line("manuf. name old : " & to_string(part_stock_array(i).manufacturers(m).name));
-							--put_line("manuf. name new : " & to_string(manufacturer_name_given)); -- rm v013
-							put_line("manuf. name new : " & to_string(property_string_given)); -- ins v013
+							put_line("manuf. name new : " & to_string(property_string_given));
 							prog_position := "MS34H";
 							if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 								raise constraint_error;
 							end if;
 							prog_position := "MS34A";
-							--part_stock_array(i).manufacturers(m).name := manufacturer_name_given; -- rm v013
-							part_stock_array(i).manufacturers(m).name := property_string_given; -- ins v013
-							-- ins v013 begin
+							part_stock_array(i).manufacturers(m).name := property_string_given;
+
 							-- If a manufacturer is deleted ( by assigning "n/a"), all order information is to be cleared
 							if property_string_given = to_bounded_string(not_assigned_mark) then
 								part_stock_array(i).manufacturers(m).part_code := to_bounded_string(not_assigned_mark);
@@ -3203,7 +2939,7 @@ procedure stock_manager is
 								part_stock_array(i).manufacturers(m).url_datasheet_2 := to_unbounded_string(not_assigned_mark);
 								part_stock_array(i).manufacturers(m).status_production := unknown;
 							end if;
-							-- ins v013 end
+
 							part_stock_array(i).manufacturers(m).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 							exit loop_through_part_stock_array;
 						end if;
@@ -3214,10 +2950,7 @@ procedure stock_manager is
 								print_error_on_non_defined_manufacturer(m);
 							else
 								prog_position := "MS342";
-								--manufacturer_part_code_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
-								--manufacturer_part_code_given := property_string_given; -- ins v013
 
-								-- ins v013 begin
 								-- make sure the given manufacturer part code does not exist already
 								prog_position := "MS34M";
 								for k in 1..part_count_max2 loop
@@ -3233,19 +2966,16 @@ procedure stock_manager is
 										end if;
 									end loop;
 								end loop;
-								-- ins v013 end
 
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("manuf. name     : " & to_string(part_stock_array(i).manufacturers(m).name));
 								put_line("part code old   : " & to_string(part_stock_array(i).manufacturers(m).part_code));
-								--put_line("part code new   : " & to_string(manufacturer_part_code_given)); -- rm v013
-								put_line("part code new   : " & to_string(property_string_given)); -- ins v013
+								put_line("part code new   : " & to_string(property_string_given));
 								prog_position := "MS34B";
 								if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 									raise constraint_error;
 								end if;
-								--part_stock_array(i).manufacturers(m).part_code := manufacturer_part_code_given; -- rm v013
-								part_stock_array(i).manufacturers(m).part_code := property_string_given; -- ins v013
+								part_stock_array(i).manufacturers(m).part_code := property_string_given;
 								--part_stock_array(i).manufacturers(m).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 								part_stock_array(i).manufacturers(m).date_edited := date_now;
 							end if;
@@ -3258,8 +2988,7 @@ procedure stock_manager is
 								print_error_on_non_defined_manufacturer(m);
 							else
 								prog_position := "MS343";
-								--manufacturer_status_production_given := status_production_type'value(argument(arg_pt+3)); -- rm v013
-								manufacturer_status_production_scratch := status_production_type'value(to_string(property_string_given)); -- in v013
+								manufacturer_status_production_scratch := status_production_type'value(to_string(property_string_given));
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("manuf. name     : " & to_string(part_stock_array(i).manufacturers(m).name));
 								put_line("sts. prod. old  : " & status_production_type'image(part_stock_array(i).manufacturers(m).status_production));
@@ -3281,19 +3010,15 @@ procedure stock_manager is
 								print_error_on_non_defined_manufacturer(m);
 							else
 								prog_position := "MS344";
-								--manufacturer_datasheet_given := to_unbounded_string(argument(arg_pt+3)); -- rm v013
-								--manufacturer_datasheet_scratch := property_string_given)); -- ins v013
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("manuf. name     : " & to_string(part_stock_array(i).manufacturers(m).name));
 								put_line("datasheet 1 old : " & to_string(part_stock_array(i).manufacturers(m).url_datasheet_1));
-								--put_line("datasheet 1 new : " & to_string(manufacturer_datasheet_given)); -- rm v013
-								put_line("datasheet 1 new : " & to_string(property_string_given)); -- ins v013
+								put_line("datasheet 1 new : " & to_string(property_string_given));
 								prog_position := "MS34D";
 								if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 									raise constraint_error;
 								end if;
-								--part_stock_array(i).manufacturers(m).url_datasheet_1 := manufacturer_datasheet_given; -- rm v013
-								part_stock_array(i).manufacturers(m).url_datasheet_1 := to_unbounded_string(to_string(property_string_given)); -- ins v013
+								part_stock_array(i).manufacturers(m).url_datasheet_1 := to_unbounded_string(to_string(property_string_given));
 								--part_stock_array(i).manufacturers(m).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 								part_stock_array(i).manufacturers(m).date_edited := date_now;
 							end if;
@@ -3307,18 +3032,15 @@ procedure stock_manager is
 							else
 								prog_position := "MS345";
 								--manufacturer_datasheet_given := to_unbounded_string(argument(arg_pt+3));
-								--manufacturer_datasheet_scratch := to_unbounded_string(property_string_given); -- ins v013
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("manuf. name     : " & to_string(part_stock_array(i).manufacturers(m).name));
 								put_line("datasheet 2 old : " & to_string(part_stock_array(i).manufacturers(m).url_datasheet_2));
-								--put_line("datasheet 2 new : " & to_string(manufacturer_datasheet_given)); -- rm v013
-								put_line("datasheet 2 new : " & to_string(property_string_given)); -- ins v013
+								put_line("datasheet 2 new : " & to_string(property_string_given));
 								prog_position := "MS34E";
 								if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 									raise constraint_error;
 								end if;
-								--part_stock_array(i).manufacturers(m).url_datasheet_2 := manufacturer_datasheet_given; -- rm v013
-								part_stock_array(i).manufacturers(m).url_datasheet_2 := to_unbounded_string(to_string(property_string_given)); -- ins v013
+								part_stock_array(i).manufacturers(m).url_datasheet_2 := to_unbounded_string(to_string(property_string_given));
 								--part_stock_array(i).manufacturers(m).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 								part_stock_array(i).manufacturers(m).date_edited := date_now;
 							end if;
@@ -3330,19 +3052,15 @@ procedure stock_manager is
 					loop
 						if part_property = part_property_type'value("distributor_" & trim(natural'image(d),left) & "_name") then
 							prog_position := "MS346";
-							--distributor_name_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
 							put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 							put_line("dist. name old  : " & to_string(part_stock_array(i).distributors(d).name));
-							--put_line("dist. name new  : " & to_string(distributor_name_given)); -- rm v013
-							put_line("dist. name new  : " & to_string(property_string_given)); -- ins v013
+							put_line("dist. name new  : " & to_string(property_string_given));
 							prog_position := "MS34F";
 							if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 								raise constraint_error;
 							end if;
-							--part_stock_array(i).distributors(d).name := distributor_name_given; -- rm v013
-							part_stock_array(i).distributors(d).name := property_string_given; -- ins v013
+							part_stock_array(i).distributors(d).name := property_string_given;
 
-							-- ins v013 begin
 							-- If a distributor is deleted ( by assigning "n/a"), all order information is to be cleared
 							--if distributor_name_given = to_bounded_string(not_assigned_mark) then
 							if property_string_given = to_bounded_string(not_assigned_mark) then
@@ -3350,7 +3068,7 @@ procedure stock_manager is
 								part_stock_array(i).distributors(d).qty_min := 1;
 								part_stock_array(i).distributors(d).price_net := 0.00;
 							end if;
-							-- ins v013 end
+
 							--part_stock_array(i).distributors(d).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 							part_stock_array(i).distributors(d).date_edited := date_now;
 							exit loop_through_part_stock_array;
@@ -3363,7 +3081,6 @@ procedure stock_manager is
 							if to_string(part_stock_array(i).distributors(d).name) = not_assigned_mark then
 								print_error_on_non_defined_distributor(d);
 							else
-								-- ins v013 begin
 								-- make sure the given distributor order code does not exist already
 								prog_position := "MS34N";
 								for k in 1..part_count_max2 loop
@@ -3378,20 +3095,16 @@ procedure stock_manager is
 										end if;
 									end loop;
 								end loop;
-								-- ins v013 end
 
-								--distributor_order_code_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("distributor name: " & to_string(part_stock_array(i).distributors(d).name));
 								put_line("order code old  : " & to_string(part_stock_array(i).distributors(d).order_code));
-								--put_line("order code new  : " & to_string(distributor_order_code_given)); -- rm v013
-								put_line("order code new  : " & to_string(property_string_given)); -- ins v013
+								put_line("order code new  : " & to_string(property_string_given));
 								prog_position := "MS34G";
 								if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 									raise constraint_error;
 								end if;
-								--part_stock_array(i).distributors(d).order_code := distributor_order_code_given; -- rm v013
-								part_stock_array(i).distributors(d).order_code := property_string_given; -- ins v013
+								part_stock_array(i).distributors(d).order_code := property_string_given;
 								--part_stock_array(i).distributors(d).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 								part_stock_array(i).distributors(d).date_edited := date_now;
 							end if;
@@ -3405,20 +3118,17 @@ procedure stock_manager is
 							if to_string(part_stock_array(i).distributors(d).name) = not_assigned_mark then
 								print_error_on_non_defined_distributor(d);
 							else
-								--distributor_qty_min_given := natural'value(argument(arg_pt+3)); -- rm v013
-								distributor_qty_min_scratch := natural'value(to_string(property_string_given)); -- ins v013
+								distributor_qty_min_scratch := natural'value(to_string(property_string_given));
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("distributor name: " & to_string(part_stock_array(i).distributors(d).name));
 								put_line("dist. order code: " & to_string(part_stock_array(i).distributors(d).order_code));
 								put_line("qty min old     :" & natural'image(part_stock_array(i).distributors(d).qty_min));
-								--put_line("qty min new     :" & natural'image(distributor_qty_min_given)); -- rm v013
-								put_line("qty min new     :" & natural'image(distributor_qty_min_scratch)); -- ins v013
+								put_line("qty min new     :" & natural'image(distributor_qty_min_scratch));
 								prog_position := "MS34H";
 								if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 									raise constraint_error;
 								end if;
-								--part_stock_array(i).distributors(d).qty_min := distributor_qty_min_given; -- rm v013
-								part_stock_array(i).distributors(d).qty_min := distributor_qty_min_scratch; -- ins v013
+								part_stock_array(i).distributors(d).qty_min := distributor_qty_min_scratch;
 								--part_stock_array(i).distributors(d).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 								part_stock_array(i).distributors(d).date_edited := date_now;
 							end if;
@@ -3432,19 +3142,16 @@ procedure stock_manager is
 							if to_string(part_stock_array(i).distributors(d).name) = not_assigned_mark then
 								print_error_on_non_defined_distributor(d);
 							else
-								-- distributor_price_net_given := money_positive'value(argument(arg_pt+3)); -- rm v013
-								distributor_price_net_scratch := money_positive'value(to_string(property_string_given)); -- ins v013
+								distributor_price_net_scratch := money_positive'value(to_string(property_string_given));
 								put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 								put_line("distributor name: " & to_string(part_stock_array(i).distributors(d).name));
 								put_line("price net old   :" & money_positive'image(part_stock_array(i).distributors(d).price_net));
-								--put_line("price net new   :" & money_positive'image(distributor_price_net_given)); -- rm v013
-								put_line("price net new   :" & money_positive'image(distributor_price_net_scratch)); -- ins v013
+								put_line("price net new   :" & money_positive'image(distributor_price_net_scratch));
 								prog_position := "MS34I";
 								if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 									raise constraint_error;
 								end if;
-								--part_stock_array(i).distributors(d).price_net := distributor_price_net_given; -- rm v013
-								part_stock_array(i).distributors(d).price_net := distributor_price_net_scratch; -- rm v013
+								part_stock_array(i).distributors(d).price_net := distributor_price_net_scratch;
 								--part_stock_array(i).distributors(d).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 								part_stock_array(i).distributors(d).date_edited := date_now;
 							end if;
@@ -3454,17 +3161,14 @@ procedure stock_manager is
 
 					if part_property = storage_place then
 						prog_position := "MS360";
-						--storage_place_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 						put_line("place old       : " & to_string(part_stock_array(i).storage_place));
-						--put_line("place new       : " & to_string(storage_place_given)); -- rm v013
-						put_line("place new       : " & to_string(property_string_given)); -- ins v013
+						put_line("place new       : " & to_string(property_string_given));
 						prog_position := "MS365";
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
-						--part_stock_array(i).storage_place := storage_place_given; -- rm v013
-						part_stock_array(i).storage_place := property_string_given; -- ins v013
+						part_stock_array(i).storage_place := property_string_given;
 						--part_stock_array(i).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 						part_stock_array(i).date_edited := date_now;
 						exit;
@@ -3472,17 +3176,14 @@ procedure stock_manager is
 
 					if part_property = remarks then
 						prog_position := "MS370";
-						--remarks_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 						put_line("remarks old     : " & to_string(part_stock_array(i).remarks));
-						--put_line("remarks new     : " & to_string(remarks_given)); -- rm v013
-						put_line("remarks new     : " & to_string(property_string_given)); -- ins v013
+						put_line("remarks new     : " & to_string(property_string_given));
 						prog_position := "MS375";
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
-						--part_stock_array(i).remarks := remarks_given; -- rm v013
-						part_stock_array(i).remarks := property_string_given; -- ins v013
+						part_stock_array(i).remarks := property_string_given;
 						--part_stock_array(i).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 						part_stock_array(i).date_edited := date_now; 
 						exit;
@@ -3492,15 +3193,12 @@ procedure stock_manager is
 						prog_position := "MS380";
 						put_line("part code " & facility_names(1) & "   : " & to_string(part_stock_array(i).part_code_fac));
 						put_line("project old     : " & to_string(part_stock_array(i).project));
-						--project_given := to_bounded_string(argument(arg_pt+3)); -- rm v013
-						--put_line("project new     : " & to_string(project_given)); -- rm v013
-						put_line("project new     : " & to_string(property_string_given)); -- ins v013
+						put_line("project new     : " & to_string(property_string_given));
 						prog_position := "MS385";
 						if request_user_confirmation(show_confirmation_dialog => operator_confirmation_required) = false then
 							raise constraint_error;
 						end if;
-						--part_stock_array(i).project := project_given; -- rm v013
-						part_stock_array(i).project := property_string_given; -- ins v013
+						part_stock_array(i).project := property_string_given;
 						--part_stock_array(i).date_edited := image(clock, time_zone => UTC_Time_Offset(clock));
 						part_stock_array(i).date_edited := date_now;
 						exit;
@@ -3529,7 +3227,7 @@ procedure stock_manager is
 				if part_stock_array(i).part_code_fac = to_bounded_string(part_code_fac_given) then
 					new_line;
 					put_line("ERROR : A part with the given part code already exists !");
-					put_line("        ID of this part is :" & natural'image(part_stock_array(i).part_id)); -- ins v005
+					put_line("        ID of this part is :" & natural'image(part_stock_array(i).part_id));
 					raise constraint_error;
 				end if;
 			end loop;
@@ -3729,8 +3427,6 @@ procedure stock_manager is
 	end read_stock_data_base_part_count;
 
 
-
--- ins v012 begin
 
 	function make_facility_bom_array(
 		in_bom : string
@@ -4042,7 +3738,6 @@ procedure stock_manager is
 		close(bom_output_file);
 		set_output(previous_output);
 	end merge_facility_bom;
--- ins v012 end
 
 -------- MAIN PROGRAM ------------------------------------------------------------------------------------
 
@@ -4055,16 +3750,6 @@ begin
 
 	prog_position := "IN000";
 	arg_ct := argument_count;
-
-	-- rm v010 begin
-	--clean up stale order and take lists
--- 	if exists (to_string(items_to_order_csv)) then 
--- 		delete_file(to_string(items_to_order_csv));
--- 	end if;
--- 	if exists (to_string(items_to_take_csv)) then 
--- 		delete_file(to_string(items_to_take_csv));
--- 	end if;
-	-- rm v010 end
 
 	if arg_ct < 1 then
 		prog_position := "IN101";
@@ -4175,7 +3860,6 @@ begin
 				prog_position := "AR086";
 				read_stock_data_base_part_count; --dyn
 				-- make sure the part code contains valid characters
-				-- if parse_part_code(to_string(part_code_given)) then -- rm v013
 				-- CS: a parse_part_code_allowing_asterisk should be allowed here instead
 					prog_position := "AR088";
 					if manage_stock(stock_operation, part_id_given => 0, part_code_fac_given => to_string(part_code_given)) then null;
@@ -4183,32 +3867,27 @@ begin
 				-- end if; -- rm v013
 			end if;
 
-			-- ins v013 begin
 			if argument(arg_pt) = "show_by_manu_code" then
 				stock_operation := show_by_manu_code;
 				prog_position := "AR120";
 				put_line("action          : " & stock_operation_type'image(stock_operation));
 				prog_position := "AR122";
 				property_string_given := to_bounded_string(Argument(arg_pt+1));
-				--put_line("manuf. part code: " & to_string(manufacturer_part_code_given)); -- rm v013
-				put_line("manuf. part code: " & to_string(property_string_given)); -- ins v013
+				put_line("manuf. part code: " & to_string(property_string_given));
 				prog_position := "AR124";
 				read_stock_data_base_part_count; --dyn
 				prog_position := "AR126";
 				if manage_stock(stock_operation, part_id_given => 0, part_code_fac_given => to_string(part_code_given)) then null;
 				end if;
 			end if;
-			-- ins v013 end
 
-			-- ins v009 begin
 			if argument(arg_pt) = "show_by_order_code" then
 				stock_operation := show_by_order_code;
 				prog_position := "AR110";
 				put_line("action          : " & stock_operation_type'image(stock_operation));
 				prog_position := "AR111";
-				property_string_given := to_bounded_string(Argument(arg_pt+1)); -- ins v013
-				--put_line("order code      : " & Argument(arg_pt+1)); -- rm v013
-				put_line("order code      : " & to_string(property_string_given)); -- ins v013
+				property_string_given := to_bounded_string(Argument(arg_pt+1));
+				put_line("order code      : " & to_string(property_string_given));
 				prog_position := "AR112";
 				read_stock_data_base_part_count; --dyn
 				-- make sure the part code contains valid characters
@@ -4216,7 +3895,6 @@ begin
 				if manage_stock(stock_operation, part_id_given => 0, part_code_fac_given => to_string(part_code_given)) then null;
 				end if;
 			end if;
-			-- ins v009 end
 
 			if argument(arg_pt) = "edit" then
 				stock_operation := edit;
@@ -4228,8 +3906,8 @@ begin
 				part_property := part_property_type'value(argument(arg_pt+2));
 				--put_line("stock data base : " & to_string(stock_db_csv));
 				put_line("property to edit: " & part_property_type'image(part_property));
-				prog_position := "AR012"; -- ins v013
-				property_string_given := to_bounded_string(argument(arg_pt+3)); -- ins v013
+				prog_position := "AR012";
+				property_string_given := to_bounded_string(argument(arg_pt+3));
 				read_stock_data_base_part_count; -- dyn
 				if manage_stock(stock_operation, part_id_given => part_id_given, part_code_fac_given => not_assigned_mark) then
 					update_log;
@@ -4328,7 +4006,6 @@ begin
 				end if;
 			end if;
 
-			-- ins v012 begin
 			if argument(arg_pt) = "scale_bom" then
 				stock_operation := scale_bom;
 				prog_position := "AR300";
@@ -4374,7 +4051,6 @@ begin
 					);
 				prog_position := "AR450";
 			end if;
-			-- ins v012 end
 
 			if argument(arg_pt) = "checkout_bom" then
 				stock_operation := checkout_bom;
@@ -4385,32 +4061,27 @@ begin
 				put_line("input fac. bom  : " & to_string(facility_bom_csv));
 
 				prog_position := "AR052";
-				-- items_to_order_csv := to_bounded_string(argument(arg_pt+2)); -- rm v013
 				-- The name of the order list is no longer provided via arguments. Instead, it will be derived
 				-- from the facility bom file name.
-				items_to_order_csv := to_bounded_string(base_name(to_string(facility_bom_csv)) & "_order.csv"); -- ins v013
+				items_to_order_csv := to_bounded_string(base_name(to_string(facility_bom_csv)) & "_order.csv");
 				put_line("order list      : " & to_string(items_to_order_csv));
 
 				prog_position := "AR053";
-				--items_to_take_csv := to_bounded_string(argument(arg_pt+3)); -- rm v013
 				-- The name of the withdrawal list is no longer provided via arguments. Instead, it will be derived
 				-- from the facility bom file name.
-				items_to_take_csv := to_bounded_string(base_name(to_string(facility_bom_csv)) & "_withdrawal.csv"); -- ins v013
+				items_to_take_csv := to_bounded_string(base_name(to_string(facility_bom_csv)) & "_withdrawal.csv");
 				put_line("withdrawal list : " & to_string(items_to_take_csv));
 
 				prog_position := "AR054";
-				--quantity_of_units:= natural'value(Argument(arg_pt+4)); -- rm v013
 				-- The quantity argument is now to be found on position 2.
-				quantity_of_units:= natural'value(Argument(arg_pt+2)); -- ins v013
+				quantity_of_units:= natural'value(Argument(arg_pt+2));
 				put_line("qty of units    :" & natural'image(quantity_of_units));
 
 				read_stock_data_base_part_count; -- dyn
 				if manage_stock(stock_operation, part_id_given => 0, part_code_fac_given => "") then
 					update_log; 
-					prog_position := "AR055"; -- ins v009
-					--copy_file(to_string(facility_bom_csv), to_string(directory_of_log) &  -- rm v009
+					prog_position := "AR055";
 
-					-- ins v011 begin
 					-- debug
 -- 					put_line("items_to_take   : " & to_string(items_to_take_csv));
 -- 					prog_position := "AR058";
@@ -4422,9 +4093,8 @@ begin
 -- 					make_filename_by_date(prefix => "LOG_withdrawal_list_", file_name => to_string(items_to_take_csv), date_now => now));
 -- 					prog_position := "AR057";
 					-- debug
-					-- ins v011 end
 
-					copy_file(to_string(items_to_take_csv), to_string(directory_of_log) &  -- ins v009
+					copy_file(to_string(items_to_take_csv), to_string(directory_of_log) &
 					make_filename_by_date(prefix => "LOG_withdrawal_list_", file_name => to_string(items_to_take_csv), date_now => now)
 					);
 				end if;
@@ -4438,15 +4108,15 @@ begin
 				facility_bom_csv := to_bounded_string(Argument(arg_pt+1));
 				put_line("input fac. bom  : " & to_string(facility_bom_csv));
 				prog_position := "AR061";
-				--items_to_order_csv := to_bounded_string(argument(arg_pt+2)); -- rm v013
+
 				-- The name of the order list is no longer provided via arguments. Instead, it will be derived
 				-- from the facility bom file name.
-				items_to_order_csv := to_bounded_string(base_name(to_string(facility_bom_csv)) & "_order.csv"); -- ins v013
+				items_to_order_csv := to_bounded_string(base_name(to_string(facility_bom_csv)) & "_order.csv");
 				put_line("order list      : " & to_string(items_to_order_csv));
 				prog_position := "AR064";
-				--quantity_of_units:= natural'value(Argument(arg_pt+3)); -- rm v013
+
 				-- The quantity argument is now to be found on position 2.
-				quantity_of_units:= natural'value(Argument(arg_pt+2)); -- ins v013
+				quantity_of_units:= natural'value(Argument(arg_pt+2));
 				put_line("qty of units    :" & natural'image(quantity_of_units));
 				read_stock_data_base_part_count; -- dyn
 				if manage_stock(stock_operation, part_id_given => 0, part_code_fac_given => "") then null;
@@ -4496,7 +4166,6 @@ begin
 	
 	prog_position := "LG000";
 
-----exception handler------------------------------------------------------------------
 	exception
 		when constraint_error => 
 			new_line;
@@ -4555,13 +4224,13 @@ begin
 			if prog_position = "RS001" then 
 				put_line("ERROR : stock data base '" & to_string(stock_db_csv) & "' not found !");
 			end if;
-			if prog_position = "MS620" then print_error_on_insufficient_rights(to_string(bom_file_csv)); end if; -- ins v009
-			if prog_position = "OL410" then print_error_on_insufficient_rights(to_string(items_to_order_csv)); end if; -- ins v013
-			if prog_position = "UD000" then print_error_on_insufficient_rights(to_string(stock_db_csv)); end if; -- ins v009
-			if prog_position = "UD001" then print_error_on_insufficient_rights(to_string(stock_db_csv)); end if; -- ins v009
-			if prog_position = "IT000" then print_error_on_insufficient_rights(to_string(items_to_take_csv)); end if; -- ins v009
-			if prog_position = "CF000" then print_error_on_insufficient_rights(to_string(facility_bom_csv)); end if; -- ins v009
-			if prog_position = "AR012" then print_error_on_too_many_characters; end if; -- ins v013
+			if prog_position = "MS620" then print_error_on_insufficient_rights(to_string(bom_file_csv)); end if;
+			if prog_position = "OL410" then print_error_on_insufficient_rights(to_string(items_to_order_csv)); end if;
+			if prog_position = "UD000" then print_error_on_insufficient_rights(to_string(stock_db_csv)); end if;
+			if prog_position = "UD001" then print_error_on_insufficient_rights(to_string(stock_db_csv)); end if;
+			if prog_position = "IT000" then print_error_on_insufficient_rights(to_string(items_to_take_csv)); end if;
+			if prog_position = "CF000" then print_error_on_insufficient_rights(to_string(facility_bom_csv)); end if;
+			if prog_position = "AR012" then print_error_on_too_many_characters; end if;
 			--put("unexpected exception ! ");
 			--put_line(exception_name(event));
 			--put_line(exception_message(event));
