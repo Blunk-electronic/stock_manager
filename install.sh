@@ -57,13 +57,14 @@ else
 
 	# Overwrite existing database and subdirectories.
 	echo "creating stock database directory" $dest_data_dir "..."
-	mkdir $dest_data_dir
+	mkdir -p $dest_data_dir
 	cp -R example_database/* $dest_data_dir
 
 
 	echo "A sample database has been created:" $dest_data_dir/stock_db.csv
 	echo "Now edit file paths in" $dest_conf_dir/stock_manager.conf
+	echo "For evaluation and training leave settings as they are."
 fi
 
-echo "installation complete"
+echo "Installation complete"
 exit
