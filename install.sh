@@ -55,8 +55,9 @@ else
 		}
 		#CS: ask user if configuration directory should be updated.
 
-	# Overwrite dummy database and subdirectories.
+	# Overwrite existing database and subdirectories.
 	echo "creating stock database directory" $dest_data_dir "..."
+	mkdir $dest_data_dir
 	cp -R example_database/* $dest_data_dir
 
 
