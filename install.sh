@@ -2,7 +2,7 @@
 
 # This is the install script for Stock_Manager. 
 
-echo "Stock_Manager installer"
+echo "Stock Manager installer"
 
 set -e
 
@@ -10,8 +10,10 @@ set -e
 
 prog_name=stock_manager
 
-dest_conf_dir=$HOME/.stock_manager
-dest_data_dir=$HOME/stock_manager
+# These variables are defaults and will be
+# overridden if specified by the user:
+dest_conf_dir=$HOME/.$prog_name
+dest_data_dir=$HOME/$prog_name
 
 # default target directory for executable:
 target_binary_dir=$HOME/bin
@@ -20,7 +22,7 @@ target_binary_dir=$HOME/bin
 
 
 
-# Make sure there are arguments. There must be at least 2:
+# Make sure there are arguments. There must be at least 1:
 if [ "$#" -lt 1 ]; then
 	echo "ERROR ! Missing arguments."
 	exit 1
@@ -64,7 +66,12 @@ procedure_make_special()
 
 
 
-# Test if user wants to install the binary file:
+# Test if user wants to install the binary file.
+# Example 1 for default installation: 
+#  install.sh binary
+# Example 2 for user specified installation: 
+#  install.sh binary /user_name/bin
+
 if [ "$1" == "binary" ]; then
 	echo "compiling ..."
 
@@ -89,15 +96,23 @@ fi
 	
 	
 	
+	
 # Test if user wants to install the configuration:
+# Example 1 for default configuration: 
+#  install.sh configuration
+# Example 2 for user specified configuration: 
+#  install.sh configuration user_name
+
 if [ "$1" == "configuration" ]; then
 # dest_conf_dir=$HOME/.stock_manager
 
 	echo "installing configuration ..."
 
 	if [ "$#" -eq 2 ]; then
-		# overwrite configuration directory if explicitely specified by user:
-		dest_conf_dir=$2
+		# Overwrite configuration home directory if explicitely specified by user.
+		# The user can specify the home directory only. The actual directory name is
+		# fixed. The directory is hidden:
+		dest_conf_dir=$2.$prog_name
 		echo "installing configuration in user specified target directory:" $dest_conf_dir
 	fi
 
@@ -117,15 +132,23 @@ fi
 
 
 
-# Test if user wants to install the stock database:
+
+# Test if user wants to install the example stock database:
+# Example 1 for default database location: 
+#  install.sh database
+# Example 2 for user specified database location: 
+#  install.sh database user_name
+
 if [ "$1" == "database" ]; then
 # dest_data_dir=$HOME/stock_manager
 
 	echo "installing database ..."
 
 	if [ "$#" -eq 2 ]; then
-		# overwrite database directory if explicitely specified by user:
-		dest_data_dir=$2
+		# Overwrite database directory if explicitely specified by user.
+		# The user can specify the home directory only. The actual directory name is
+		# fixed:
+		dest_data_dir=$2$prog_name
 		echo "installing database in user specified target directory:" $dest_data_dir
 	fi
 
