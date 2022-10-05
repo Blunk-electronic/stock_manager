@@ -2,6 +2,10 @@
 
 # This is the uninstall script for Stock_Manager. 
 
+# ToDo: 
+# - Complete and test.
+# - implement arguments of user specific target directories (see install.sh)
+
 set -e
 
 dest_conf_dir=$HOME/.stock_manager
