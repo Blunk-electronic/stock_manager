@@ -1,7 +1,7 @@
 # Stock Manager
 A simple ERP system to administrate an electronic component stock.
 
-# Basics
+## Basics
 The software consists of three parts:
 - A sample database in your home directory in sub-directory stock_manager. 
   The database is a csv file named stock_db.csv.
@@ -23,7 +23,7 @@ sh install.sh database
 WARNING: The database already existing will be overwritten without warning!
 The name of the directory containing the database is fixed to "stock_manager".
 
-### Installation in an explicitely given home directory
+### Installation in an Explicitely Given Home Directory
 To install the sample database in the home of another user run:
 ```sh
 sh install.sh database user_name
@@ -44,9 +44,9 @@ sh install.sh configuration
 The name of the hidden directory containing the configuration is
 fixed to ".stock_manager".
 If a configuration already exists, then it will NOT be overwritten.
-If required edit the configuration file .stock_manager/conf/stock_manager.conf.
+If required, edit the configuration file .stock_manager/conf/stock_manager.conf.
 
-### Installation in an explicitely given home directory
+### Installation in an Explicitely Given Home Directory
 To install the configuration files in a special location run this command:
 ```sh
 sh install.sh configuration user_name
@@ -60,15 +60,16 @@ If required edit the configuration file .stock_manager/conf/stock_manager.conf.
 
 
 
-## Installing the executable (biary) file
+## Installing the Executable (binary) File
 ### Default Installation
 To install the binary file in your own home ($HOME/bin) run this command:
 ```sh
 sh install.sh binary
 ```
 
-### Installation in an explicitely given directory
-To install the binary file in a special location run this command:
+### Installation in an Explicitely Given Directory
+In order to make the stock_manager available for all users or
+to install the binary file in a special location run this command:
 ```sh
 sh install.sh binary /usr/local/bin
 ```
