@@ -112,7 +112,7 @@ if [ "$1" == "configuration" ]; then
 		# Overwrite configuration home directory if explicitely specified by user.
 		# The user can specify the home directory only. The actual directory name is
 		# fixed. The directory is hidden:
-		dest_conf_dir=$2/.$prog_name
+		dest_conf_dir=/home/$2/.$prog_name
 		echo "installing configuration in user specified target directory:" $dest_conf_dir
 	fi
 
@@ -148,7 +148,7 @@ if [ "$1" == "database" ]; then
 		# Overwrite database directory if explicitely specified by user.
 		# The user can specify the home directory only. The actual directory name is
 		# fixed:
-		dest_data_dir=$2/$prog_name
+		dest_data_dir=/home/$2/$prog_name
 		echo "installing database in user specified target directory:" $dest_data_dir
 	fi
 
